@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advanced Skynet Meal Planner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    @keyframes matrixRain {
+      0% { transform: translateY(-100vh); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(100vh); opacity: 0; }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    @keyframes slideInLeft {
+      from { transform: translateX(-100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes fadeInUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 5px #00ff41; }
+      50% { box-shadow: 0 0 20px #00ff41, 0 0 30px #00ff41; }
+    }
+
+    .matrix-char {
+      animation: matrixRain 3s linear infinite;
+      color: #00ff41;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+    }
+
+    .console-cursor {
+      animation: pulse 1s infinite;
+      background: #00ff41;
+    }
+
+    .slide-in-left { animation: slideInLeft 0.6s ease-out; }
+    .slide-in-right { animation: slideInRight 0.6s ease-out; }
+    .fade-in-up { animation: fadeInUp 0.8s ease-out; }
+    .glow-effect { animation: glow 2s infinite; }
+
+    .glass-morphism {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .neo-morphism {
+      background: #f0f0f0;
+      box-shadow: 20px 20px 60px #bebebe, -20px -20px 60px #ffffff;
+    }
+
+    body { font-family: 'Inter', sans-serif; }
+
+    .nutrition-bar {
+      transition: width 0.8s ease-in-out;
+    }
+
+    .meal-card {
+      transition: all 0.3s ease;
+      transform-style: preserve-3d;
+    }
+
+    .meal-card:hover {
+      transform: translateY(-5px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+
+    .progress-ring {
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    @keyframes progressFill {
+      from { stroke-dashoffset: 251.2; }
+      to { stroke-dashoffset: var(--target-offset); }
+    }
+  </style>
+</head>
+<body x-data="mealPlannerApp()" x-init="init()" class="bg-gray-50 text-gray-800">
+
+  <!-- Matrix Loading Screen -->
+  <div x-show="loading" class="fixed inset-0 bg-black z-50 overflow-hidden">
+    <!-- Matrix Rain Effect -->
+    <div class="absolute inset-0">
+      <template x-for="i in 50">
+        <div class="matrix-char absolute text-xs select-none pointer-events-none"
+             :style="`left: ${Math.random() * 100}%; animation-delay: ${Math.random() * 3}s; animation-duration: ${3 + Math.random() * 2}s`"
+             x-text="String.fromCharCode(65 + Math.floor(Math.random() * 26))">
+        </div>
+      </template>
+    </div>
+
+    <!-- Loading Console -->
+    <div class="flex items-center justify-center h-full relative z-10">
+      <div class="bg-black border-2 border-green-400 rounded-lg p-8 max-w-2xl w-full mx-4 glow-effect">
+        <div class="text-green-400 font-mono">
+          <div class="text-center mb-6">
+            <div class="text-2xl font-bold">SKYNET NUTRITION PROTOCOL</div>
+            <div class="text-sm mt-2">Advanced Infant Development System v2.1</div>
+          </div>
+
+          <div class="space-y-1 min-h-[200px]">
+            <template x-for="(log, i) in loadingLogs" :key="i">
+              <div x-text="log" class="fade-in-up" :style="`animation-delay: ${i * 0.1}s`"></div>
+            </template>
+            <div class="console-cursor inline-block w-2 h-4 ml-1"></div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="mt-6">
+            <div class="bg-gray-800 h-2 rounded-full overflow-hidden">
+              <div class="bg-green-400 h-full transition-all duration-300 ease-out"
+                   :style="`width: ${loadingProgress}%`"></div>
+            </div>
+            <div class="text-center mt-2 text-sm" x-text="`INITIALIZING... ${loadingProgress}%`"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Application -->
+  <div x-show="!loading" x-transition:enter="transition ease-out duration-1000"
+       x-transition:enter-start="opacity-0 transform scale-95"
+       x-transition:enter-end="opacity-100 transform scale-100"
+       style="display: none;">
+
+    <!-- Header -->
+    <header class="gradient-bg text-white p-8 relative overflow-hidden">
+      <div class="absolute inset-0 opacity-20">
+        <div class="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 animate-gradient-x"></div>
+      </div>
+
+      <div class="relative z-10 max-w-6xl mx-auto">
+        <div class="slide-in-left">
+          <h1 class="text-4xl md:text-5xl font-bold mb-2">Erish's Advanced Nutrition Protocol</h1>
+          <div class="flex flex-wrap gap-6 text-lg">
+            <div class="glass-morphism px-4 py-2 rounded-lg">
+              <span class="block text-sm opacity-80">Start Date</span>
+              <span class="font-semibold">July 2, 2025</span>
+            </div>
+            <div class="glass-morphism px-4 py-2 rounded-lg">
+              <span class="block text-sm opacity-80">Current Weight</span>
+              <span class="font-semibold" x-text="`${currentWeight} kg`"></span>
+            </div>
+            <div class="glass-morphism px-4 py-2 rounded-lg">
+              <span class="block text-sm opacity-80">Target Weight</span>
+              <span class="font-semibold">11.5 kg</span>
+            </div>
+            <div class="glass-morphism px-4 py-2 rounded-lg">
+              <span class="block text-sm opacity-80">Age</span>
+              <span class="font-semibold">7 months</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Dashboard Stats -->
+    <section class="max-w-6xl mx-auto px-4 py-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 slide-in-right">
+        <template x-for="(stat, index) in dashboardStats" :key="index">
+          <div class="neo-morphism rounded-xl p-6 text-center meal-card"
+               :style="`animation-delay: ${index * 0.1}s`">
+            <div class="text-3xl mb-2" x-text="stat.icon"></div>
+            <div class="text-2xl font-bold text-gray-700" x-text="stat.value"></div>
+            <div class="text-sm text-gray-500" x-text="stat.label"></div>
+
+            <!-- Progress Ring -->
+            <div class="mt-4 flex justify-center" x-show="stat.progress">
+              <svg class="progress-ring w-16 h-16">
+                <circle cx="32" cy="32" r="28" stroke="#e5e7eb" stroke-width="4" fill="none"></circle>
+                <circle cx="32" cy="32" r="28" :stroke="stat.color" stroke-width="4" fill="none"
+                        stroke-linecap="round" stroke-dasharray="175.9"
+                        :stroke-dashoffset="175.9 - (175.9 * stat.progress / 100)"
+                        style="transition: stroke-dashoffset 1s ease-in-out;"></circle>
+              </svg>
+            </div>
+          </div>
+        </template>
+      </div>
+    </section>
+
+    <!-- Weekly Meal Plans -->
+    <section class="max-w-6xl mx-auto px-4 py-8">
+      <h2 class="text-3xl font-bold text-center mb-8 fade-in-up">Weekly Nutrition Plans</h2>
+
+      <div class="space-y-6">
+        <template x-for="week in [1,2,3,4]" :key="week">
+          <div class="bg-white rounded-2xl shadow-lg overflow-hidden meal-card">
+            <div @click="toggleWeek(week)"
+                 class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-6 cursor-pointer flex justify-between items-center hover:from-indigo-600 hover:to-purple-700 transition-all duration-300">
+              <div>
+                <h3 class="text-xl font-semibold">Week <span x-text="week"></span></h3>
+                <p class="text-indigo-100 text-sm" x-text="getWeekDateRange(week)"></p>
+              </div>
+              <div class="flex items-center space-x-4">
+                <div class="text-right">
+                  <div class="text-sm opacity-80">Daily Calories</div>
+                  <div class="font-semibold" x-text="`${getWeekCalories(week)} kcal`"></div>
+                </div>
+                <div class="transform transition-transform duration-300"
+                     :class="activeWeek === week ? 'rotate-180' : ''"
+                     x-text="'▼'"></div>
+              </div>
+            </div>
+
+            <div x-show="activeWeek === week"
+                 x-collapse
+                 class="p-6">
+
+              <!-- Nutrition Overview -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <template x-for="nutrient in getNutritionOverview(week)" :key="nutrient.name">
+                  <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-2">
+                      <span class="font-medium" x-text="nutrient.name"></span>
+                      <span class="text-sm font-semibold" x-text="`${nutrient.amount}${nutrient.unit}`"></span>
+                    </div>
+                    <div class="bg-gray-200 rounded-full h-2">
+                      <div class="nutrition-bar rounded-full h-2"
+                           :style="`width: ${nutrient.percentage}%; background-color: ${nutrient.color}`"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1" x-text="`${nutrient.percentage}% of daily needs`"></div>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Daily Meals -->
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <template x-for="(meal, index) in getMeals(week)" :key="index">
+                  <div class="bg-gradient-to-br from-white to-gray-50 rounded-lg p-4 border-l-4"
+                       :style="`border-color: ${meal.color}; animation-delay: ${index * 0.1}s`"
+                       class="fade-in-up">
+                    <div class="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 class="font-semibold text-lg" x-text="meal.title"></h4>
+                        <p class="text-sm text-gray-500" x-text="meal.time"></p>
+                      </div>
+                      <div class="text-2xl" x-text="meal.icon"></div>
+                    </div>
+
+                    <p class="text-gray-700 mb-3 text-sm leading-relaxed" x-text="meal.description"></p>
+
+                    <!-- Nutritional Info -->
+                    <div class="bg-gray-100 rounded-lg p-3 space-y-2">
+                      <div class="flex justify-between text-xs">
+                        <span>Calories:</span>
+                        <span class="font-semibold" x-text="`${meal.calories} kcal`"></span>
+                      </div>
+                      <div class="flex justify-between text-xs">
+                        <span>Protein:</span>
+                        <span class="font-semibold" x-text="`${meal.protein}g`"></span>
+                      </div>
+                      <div class="flex justify-between text-xs">
+                        <span>Fat:</span>
+                        <span class="font-semibold" x-text="`${meal.fat}g`"></span>
+                      </div>
+                      <div class="flex justify-between text-xs">
+                        <span>Carbs:</span>
+                        <span class="font-semibold" x-text="`${meal.carbs}g`"></span>
+                      </div>
+                    </div>
+
+                    <!-- Preparation Tips -->
+                    <div class="mt-3 p-2 bg-blue-50 rounded text-xs">
+                      <div class="font-medium text-blue-800 mb-1">💡 Preparation Tip:</div>
+                      <div class="text-blue-700" x-text="meal.tip"></div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Weekly Summary -->
+              <div class="mt-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4">
+                <h4 class="font-semibold text-lg mb-3">Week <span x-text="week"></span> Summary</h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <div class="font-medium">Total Calories</div>
+                    <div class="text-lg font-bold text-green-600" x-text="`${getWeekCalories(week) * 7} kcal`"></div>
+                  </div>
+                  <div>
+                    <div class="font-medium">New Foods</div>
+                    <div class="text-lg font-bold text-blue-600" x-text="getNewFoodsCount(week)"></div>
+                  </div>
+                  <div>
+                    <div class="font-medium">Meal Variety</div>
+                    <div class="text-lg font-bold text-purple-600">High</div>
+                  </div>
+                  <div>
+                    <div class="font-medium">Texture Progress</div>
+                    <div class="text-lg font-bold text-orange-600" x-text="getTextureLevel(week)"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </section>
+
+    <!-- Charts Section -->
+    <section class="max-w-6xl mx-auto px-4 py-8">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- Weight Progress Chart -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 fade-in-up">
+          <h3 class="text-xl font-bold mb-4 text-center">Weight Progress Tracking</h3>
+          <canvas id="weightChart" class="w-full h-64"></canvas>
+
+          <div class="mt-6 space-y-3">
+            <div class="flex gap-2">
+              <input type="date" x-model="newWeightDate"
+                     class="flex-1 border rounded-lg px-3 py-2"
+                     min="2025-07-02" max="2025-08-01">
+              <input type="number" x-model="newWeight" step="0.01"
+                     placeholder="Weight (kg)"
+                     class="flex-1 border rounded-lg px-3 py-2">
+            </div>
+            <button @click="addWeightEntry()"
+                    class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-2 rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105">
+              Record Weight
+            </button>
+          </div>
+        </div>
+
+        <!-- Nutrition Distribution -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 fade-in-up">
+          <h3 class="text-xl font-bold mb-4 text-center">Daily Nutrition Breakdown</h3>
+          <canvas id="nutritionChart" class="w-full h-64"></canvas>
+
+          <div class="mt-4 grid grid-cols-3 gap-4 text-center text-sm">
+            <div class="p-2 bg-red-50 rounded">
+              <div class="font-semibold text-red-600">Protein</div>
+              <div class="text-red-800">15-20%</div>
+            </div>
+            <div class="p-2 bg-yellow-50 rounded">
+              <div class="font-semibold text-yellow-600">Fat</div>
+              <div class="text-yellow-800">45-50%</div>
+            </div>
+            <div class="p-2 bg-green-50 rounded">
+              <div class="font-semibold text-green-600">Carbs</div>
+              <div class="text-green-800">30-35%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Development Milestones -->
+    <section class="max-w-6xl mx-auto px-4 py-8">
+      <div class="bg-white rounded-2xl shadow-lg p-8 fade-in-up">
+        <h2 class="text-2xl font-bold text-center mb-8">7-Month Development Milestones & Tips</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <template x-for="(category, index) in developmentMilestones" :key="index">
+            <div class="space-y-4" :style="`animation-delay: ${index * 0.2}s`" class="fade-in-up">
+              <div class="flex items-center space-x-3 mb-4">
+                <div class="text-3xl" x-text="category.icon"></div>
+                <h3 class="text-xl font-semibold" x-text="category.title"></h3>
+              </div>
+
+              <template x-for="milestone in category.milestones" :key="milestone.skill">
+                <div class="bg-gray-50 rounded-lg p-4">
+                  <div class="flex items-start justify-between mb-2">
+                    <div class="font-medium" x-text="milestone.skill"></div>
+                    <div class="w-6 h-6 rounded-full border-2"
+                         :class="milestone.achieved ? 'bg-green-500 border-green-500' : 'border-gray-300'">
+                      <div x-show="milestone.achieved" class="text-white text-center text-xs leading-6">✓</div>
+                    </div>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2" x-text="milestone.description"></p>
+                  <div class="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                    <span class="font-medium">💡 Tip:</span> <span x-text="milestone.tip"></span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+      <div class="max-w-6xl mx-auto px-4 text-center">
+        <div class="text-lg font-semibold mb-2">Skynet Nutrition Protocol v2.1</div>
+        <div class="text-sm text-gray-400">Advanced Infant Development System</div>
+        <div class="text-sm text-gray-400 mt-2">Optimizing growth through precision nutrition</div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    function mealPlannerApp() {
+      return {
+        loading: true,
+        loadingProgress: 0,
+        loadingLogs: [],
+        activeWeek: 1,
+        currentWeight: 7.5,
+        newWeight: '',
+        newWeightDate: '',
+
+        dashboardStats: [
+          { icon: '⚖️', value: '7.5kg', label: 'Current Weight', progress: 65, color: '#3b82f6' },
+          { icon: '📈', value: '4kg', label: 'Target Gain', progress: 40, color: '#10b981' },
+          { icon: '🍼', value: '6x', label: 'Daily Meals', progress: 100, color: '#f59e0b' },
+          { icon: '🎯', value: '28', label: 'Days Planned', progress: 25, color: '#8b5cf6' }
+        ],
+
+        developmentMilestones: [
+          {
+            title: 'Physical Development',
+            icon: '💪',
+            milestones: [
+              {
+                skill: 'Sits without support',
+                description: 'Can sit independently for short periods',
+                tip: 'Place toys around him while sitting to encourage balance',
+                achieved: false
+              },
+              {
+                skill: 'Rolls both ways',
+                description: 'Rolls from back to tummy and tummy to back',
+                tip: 'Give plenty of floor time on a safe, soft surface',
+                achieved: true
+              },
+              {
+                skill: 'Supports weight on legs',
+                description: 'Bears weight when held upright',
+                tip: 'Hold him standing while he bounces on your lap',
+                achieved: true
+              }
+            ]
+          },
+          {
+            title: 'Cognitive Development',
+            icon: '🧠',
+            milestones: [
+              {
+                skill: 'Responds to own name',
+                description: 'Turns head when name is called',
+                tip: 'Use his name frequently in daily conversations',
+                achieved: true
+              },
+              {
+                skill: 'Shows curiosity',
+                description: 'Explores objects by mouthing and shaking',
+                tip: 'Provide safe objects with different textures',
+                achieved: true
+              },
+              {
+                skill: 'Imitates sounds',
+                description: 'Copies sounds and facial expressions',
+                tip: 'Make exaggerated facial expressions during play',
+                achieved: false
+              }
+            ]
+          },
+          {
+            title: 'Fine Motor Skills',
+            icon: '✋',
+            milestones: [
+              {
+                skill: 'Transfers objects',
+                description: 'Passes toys from hand to hand',
+                tip: 'Offer toys that fit well in his hands',
+                achieved: true
+              },
+              {
+                skill: 'Rakes with fingers',
+                description: 'Uses fingers to pull small objects closer',
+                tip: 'Practice with small, safe finger foods',
+                achieved: false
+              },
+              {
+                skill: 'Bangs objects',
+                description: 'Enjoys making noise by hitting objects',
+                tip: 'Provide safe objects he can bang together',
+                achieved: true
+              }
+            ]
+          },
+          {
+            title: 'Social & Emotional',
+            icon: '😊',
+            milestones: [
+              {
+                skill: 'Enjoys peek-a-boo',
+                description: 'Laughs and anticipates the game',
+                tip: 'Play peek-a-boo with blankets or your hands',
+                achieved: true
+              },
+              {
+                skill: 'Shows stranger anxiety',
+                description: 'May be wary of unfamiliar people',
+                tip: 'Allow time for him to warm up to new people',
+                achieved: false
+              },
+              {
+                skill: 'Expresses joy and frustration',
+                description: 'Shows clear emotional responses',
+                tip: 'Acknowledge his feelings with words',
+                achieved: true
+              }
+            ]
+          }
+        ],
+
+        init() {
+          this.startLoading();
+          this.initCharts();
+        },
+
+        startLoading() {
+          const logs = [
+            'INITIALIZING SKYNET NUTRITION PROTOCOL...',
+            'SCANNING INFANT BIOMETRICS...',
+            'LOADING NUTRITIONAL DATABASE...',
+            'CALIBRATING GROWTH ALGORITHMS...',
+            'ANALYZING DEVELOPMENTAL PATTERNS...',
+            'OPTIMIZING MEAL COMPOSITIONS...',
+            'ESTABLISHING NEURAL PATHWAYS...',
+            'SYNCHRONIZING FEEDING SCHEDULES...',
+            'ACTIVATING MILESTONE TRACKING...',
+            'SYSTEM FULLY OPERATIONAL'
+          ];
+
+          let index = 0;
+          const interval = setInterval(() => {
+            if (index < logs.length) {
+              this.loadingLogs.push(logs[index]);
+              this.loadingProgress = Math.round(((index + 1) / logs.length) * 100);
+              index++;
+            } else {
+              clearInterval(interval);
+              setTimeout(() => {
+                this.loading = false;
+              }, 1000);
+            }
+          }, 500);
+        },
+
+        toggleWeek(week) {
+          this.activeWeek = this.activeWeek === week ? null : week;
+        },
+
+        getWeekDateRange(week) {
+          const startDate = new Date('2025-07-02');
+          const weekStart = new Date(startDate);
+          weekStart.setDate(startDate.getDate() + (week - 1) * 7);
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+
+          return `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        },
+
+        getWeekCalories(week) {
+          const baseCalories = 800;
+          return baseCalories + (week - 1) * 50;
+        },
+
+        getNewFoodsCount(week) {
+          return [3, 4, 5, 6][week - 1];
+        },
+
+        getTextureLevel(week) {
+          return ['Puree', 'Mashed', 'Chunky', 'Finger Foods'][week - 1];
+        },
+
+        getNutritionOverview(week) {
+          return [
+            { name: 'Protein', amount: 15 + week, unit: 'g', percentage: 70 + week * 5, color: '#ef4444' },
+            { name: 'Fat', amount: 35 + week * 2, unit: 'g', percentage: 80 + week * 3, color: '#f59e0b' },
+            { name: 'Carbs', amount: 85 + week * 5, unit: 'g', percentage: 75 + week * 4, color: '#10b981' }
+          ];
+        },
+
+        getMeals(week) {
+          const meals = {
+            1: [
+              {
+                title: 'Breakfast',
+                time: '7:00 AM',
+                icon: '🌅',
+                color: '#fbbf24',
+                description: 'Rice porridge with mashed banana and breast milk (fortified with iron)',
+                calories: 120,
+                protein: 3.2,
+                fat: 4.8,
+                carbs: 18.5,
+                tip: 'Ensure porridge is smooth consistency. Test temperature on your wrist.'
+              },
+              {
+                title: 'Mid-Morning Snack',
+                time: '9:30 AM',
+                icon: ' ',
+                color: '#34d399',
+                description: 'Full-fat Greek yogurt with avocado purée and a drop of olive oil',
+                calories: 95,
+                protein: 4.1,
+                fat: 7.2,
+                carbs: 5.8,
+                tip: 'Mix yogurt and avocado until completely smooth. Serve at room temperature.'
+              },
+              {
+                title: 'Lunch',
+                time: '12:00 PM',
+                icon: '🍽️',
+                color: '#f87171',
+                description: 'Soft mashed sweet potatoes with finely minced chicken and olive oil',
+                calories: 140,
+                protein: 8.5,
+                fat: 6.2,
+                carbs: 15.8,
+                tip: 'Steam chicken until very tender, then mince finely. Add oil after cooking.'
+              },
+              {
+                title: 'Afternoon Snack',
+                time: '3:00 PM',
+                icon: '🥜',
+                color: '#a78bfa',
+                description: 'Oatmeal with banana and smooth peanut butter (allergen introduction)',
+                calories: 110,
+                protein: 4.8,
+                fat: 5.5,
+                carbs: 12.3,
+                tip: 'Use smooth peanut butter, thinned with breast milk if needed.'
+              },
+              {
+                title: 'Dinner',
+                time: '6:00 PM',
+                icon: '🌙',
+                color: '#fb923c',
+                description: 'Pumpkin porridge with egg yolk and butter for healthy fats',
+                calories: 125,
+                protein: 5.2,
+                fat: 7.8,
+                carbs: 11.5,
+                tip: 'Cook egg yolk separately and mix in. Ensure pumpkin is well-cooked and smooth.'
+              },
+              {
+                title: 'Evening Supper',
+                time: '8:30 PM',
+                icon: '🍼',
+                color: '#60a5fa',
+                description: 'Full-fat yogurt with breast milk and 1 tsp almond butter',
+                calories: 85,
+                protein: 3.8,
+                fat: 6.1,
+                carbs: 4.2,
+                tip: 'Mix thoroughly to avoid lumps. Serve as a calming bedtime meal.'
+              }
+            ],
+            2: [
+              {
+                title: 'Breakfast',
+                time: '7:00 AM',
+                icon: '🌅',
+                color: '#fbbf24',
+                description: 'Oatmeal with full cream milk, mashed papaya, and coconut oil',
+                calories: 135,
+                protein: 4.1,
+                fat: 6.8,
+                carbs: 16.2,
+                tip: 'Cook oats until very soft. Papaya should be very ripe and sweet.'
+              },
+              {
+                title: 'Mid-Morning Snack',
+                time: '9:30 AM',
+                icon: '🥄',
+                color: '#34d399',
+                description: 'Full-fat yogurt with chia seeds (soaked) and banana',
+                calories: 100,
+                protein: 4.5,
+                fat: 5.8,
+                carbs: 8.2,
+                tip: 'Soak chia seeds for 30 minutes until gel-like. Mash banana completely.'
+              },
+              {
+                title: 'Lunch',
+                time: '12:00 PM',
+                icon: '🍽️',
+                color: '#f87171',
+                description: 'Chicken congee with sweet potato, ghee, and pumpkin purée',
+                calories: 155,
+                protein: 9.2,
+                fat: 7.5,
+                carbs: 14.8,
+                tip: 'Cook congee until rice breaks down completely. Add ghee at the end.'
+              },
+              {
+                title: 'Afternoon Snack',
+                time: '3:00 PM',
+                icon: '🥜',
+                color: '#a78bfa',
+                description: 'Avocado and banana mash with a drizzle of olive oil',
+                calories: 115,
+                protein: 2.8,
+                fat: 8.2,
+                carbs: 9.5,
+                tip: 'Use very ripe fruits. Add oil gradually while mashing.'
+              },
+              {
+                title: 'Dinner',
+                time: '6:00 PM',
+                icon: '🌙',
+                color: '#fb923c',
+                description: 'Rice cereal with egg yolk, mashed tofu, spinach, and cheese',
+                calories: 145,
+                protein: 7.8,
+                fat: 8.1,
+                carbs: 12.3,
+                tip: 'Steam spinach and purée completely. Use soft, silken tofu.'
+              },
+              {
+                title: 'Evening Supper',
+                time: '8:30 PM',
+                icon: '🍼',
+                color: '#60a5fa',
+                description: 'Full-cream yogurt with dates purée and coconut oil',
+                calories: 95,
+                protein: 3.5,
+                fat: 6.8,
+                carbs: 6.2,
+                tip: 'Remove pits from dates and purée until smooth. Mix oil thoroughly.'
+              }
+            ],
+            3: [
+              {
+                title: 'Breakfast',
+                time: '7:00 AM',
+                icon: '🌅',
+                color: '#fbbf24',
+                description: 'Creamy wheat cereal with mashed banana and ghee',
+                calories: 145,
+                protein: 4.8,
+                fat: 7.2,
+                carbs: 17.5,
+                tip: 'Cook wheat cereal until very smooth. Add ghee while warm.'
+              },
+              {
+                title: 'Mid-Morning Snack',
+                time: '9:30 AM',
+                icon: '🥄',
+                color: '#34d399',
+                description: 'Avocado-peanut butter smoothie with full cream milk',
+                calories: 125,
+                protein: 5.2,
+                fat: 9.8,
+                carbs: 6.8,
+                tip: 'Blend until completely smooth. Strain if necessary to remove lumps.'
+              },
+              {
+                title: 'Lunch',
+                time: '12:00 PM',
+                icon: '🍽️',
+                color: '#f87171',
+                description: 'Soft lentils with rice, minced chicken, carrot purée, and olive oil',
+                calories: 165,
+                protein: 10.5,
+                fat: 7.8,
+                carbs: 16.2,
+                tip: 'Cook lentils until completely soft. Strain to remove skins if needed.'
+              },
+              {
+                title: 'Afternoon Snack',
+                time: '3:00 PM',
+                icon: '🥜',
+                color: '#a78bfa',
+                description: 'Yogurt with ground nut powder and mashed pear',
+                calories: 105,
+                protein: 4.8,
+                fat: 6.2,
+                carbs: 8.5,
+                tip: 'Use finely ground nuts. Ensure pear is very ripe and sweet.'
+              },
+              {
+                title: 'Dinner',
+                time: '6:00 PM',
+                icon: '🌙',
+                color: '#fb923c',
+                description: 'Pumpkin-potato-egg yolk purée with ghee',
+                calories: 135,
+                protein: 6.2,
+                fat: 8.5,
+                carbs: 11.8,
+                tip: 'Steam vegetables until very soft. Mix egg yolk in while warm.'
+              },
+              {
+                title: 'Evening Supper',
+                time: '8:30 PM',
+                icon: '🍼',
+                color: '#60a5fa',
+                description: 'Full cream milk with rice cereal and banana mash',
+                calories: 110,
+                protein: 4.2,
+                fat: 5.8,
+                carbs: 12.5,
+                tip: 'Make cereal slightly thicker for better satiety before bed.'
+              }
+            ],
+            4: [
+              {
+                title: 'Breakfast',
+                time: '7:00 AM',
+                icon: '🌅',
+                color: '#fbbf24',
+                description: 'Bread pudding with mashed papaya and butter',
+                calories: 155,
+                protein: 5.5,
+                fat: 8.2,
+                carbs: 17.8,
+                tip: 'Use soft bread, soak well in milk. Papaya should be very ripe.'
+              },
+              {
+                title: 'Mid-Morning Snack',
+                time: '9:30 AM',
+                icon: '🥄',
+                color: '#34d399',
+                description: 'Boiled egg yolk with mashed potato and olive oil',
+                calories: 115,
+                protein: 6.8,
+                fat: 7.5,
+                carbs: 5.2,
+                tip: 'Mash egg yolk well with potato. Add oil to increase calories.'
+              },
+              {
+                title: 'Lunch',
+                time: '12:00 PM',
+                icon: '🍽️',
+                color: '#f87171',
+                description: 'Soft macaroni with chicken, pumpkin sauce, and melted cheese',
+                calories: 175,
+                protein: 11.2,
+                fat: 8.8,
+                carbs: 15.5,
+                tip: 'Cook pasta until very soft. Blend pumpkin into a smooth sauce.'
+              },
+              {
+                title: 'Afternoon Snack',
+                time: '3:00 PM',
+                icon: '🥜',
+                color: '#a78bfa',
+                description: 'Mashed avocado and banana with almond butter',
+                calories: 125,
+                protein: 4.2,
+                fat: 9.8,
+                carbs: 7.8,
+                tip: 'Use smooth almond butter. Mix fruits until completely smooth.'
+              },
+              {
+                title: 'Dinner',
+                time: '6:00 PM',
+                icon: '🌙',
+                color: '#fb923c',
+                description: 'Lentil soup with rice, ghee, and yogurt',
+                calories: 150,
+                protein: 8.5,
+                fat: 7.2,
+                carbs: 16.8,
+                tip: 'Blend soup until smooth. Stir in yogurt after cooling slightly.'
+              },
+              {
+                title: 'Evening Supper',
+                time: '8:30 PM',
+                icon: '🍼',
+                color: '#60a5fa',
+                description: 'Rice cereal with full cream milk and dates purée',
+                calories: 120,
+                protein: 4.8,
+                fat: 6.2,
+                carbs: 13.5,
+                tip: 'Dates provide natural sweetness and calories. Blend until smooth.'
+              }
+            ]
+          };
+
+          return meals[week] || [];
+        },
+
+        addWeightEntry() {
+          if (this.newWeight && this.newWeightDate) {
+            // Update charts would go here
+            this.currentWeight = parseFloat(this.newWeight);
+            this.dashboardStats[0].value = `${this.currentWeight}kg`; // Update dashboard stat
+
+            // For chart, you'd typically push to the chart data array and then update the chart
+            // For now, just a placeholder.
+            this.newWeight = '';
+            this.newWeightDate = '';
+
+            alert('Weight recorded successfully! (Chart update not yet implemented)'); // User feedback
+            this.createWeightChart(); // Re-render chart to reflect new currentWeight in UI
+          } else {
+            alert('Please enter both weight and date.');
+          }
+        },
+
+        initCharts() {
+          setTimeout(() => {
+            this.createWeightChart();
+            this.createNutritionChart();
+          }, 1000);
+        },
+
+        createWeightChart() {
+          const ctx = document.getElementById('weightChart')?.getContext('2d');
+          if (!ctx) return;
+
+          // Destroy existing chart if it exists to prevent multiple charts on same canvas
+          if (this.weightChartInstance) {
+            this.weightChartInstance.destroy();
+          }
+
+          this.weightChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Target'],
+              datasets: [{
+                label: "Erish's Weight (kg)",
+                data: [7.5, 8.2, 9.1, 10.2, 11.5], // This should ideally be dynamic based on records
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                fill: true
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: true,
+                  position: 'top'
+                }
+              },
+              scales: {
+                y: {
+                  min: 7,
+                  max: 12,
+                  title: {
+                    display: true,
+                    text: 'Weight (kg)',
+                    font: { size: 14, weight: 'bold' }
+                  },
+                  grid: {
+                    color: 'rgba(0,0,0,0.1)'
+                  }
+                },
+                x: {
+                  title: {
+                    display: true,
+                    text: 'Progress Timeline',
+                    font: { size: 14, weight: 'bold' }
+                  },
+                  grid: {
+                    color: 'rgba(0,0,0,0.1)'
+                  }
+                }
+              },
+              elements: {
+                point: {
+                  backgroundColor: '#3b82f6',
+                  borderColor: '#ffffff',
+                  borderWidth: 2
+                }
+              }
+            }
+          });
+        },
+
+        createNutritionChart() {
+          const ctx = document.getElementById('nutritionChart')?.getContext('2d');
+          if (!ctx) return;
+
+          // Destroy existing chart if it exists to prevent multiple charts on same canvas
+          if (this.nutritionChartInstance) {
+            this.nutritionChartInstance.destroy();
+          }
+
+          this.nutritionChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: ['Protein', 'Fat', 'Carbohydrates'],
+              datasets: [{
+                data: [18, 47, 35],
+                backgroundColor: [
+                  '#ef4444',
+                  '#f59e0b',
+                  '#10b981'
+                ],
+                borderWidth: 0,
+                hoverOffset: 10
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: {
+                    padding: 20,
+                    font: { size: 12, weight: 'bold' }
+                  }
+                }
+              },
+              cutout: '60%'
+            }
+          });
+        }
+      }
+    }
+  </script>
+</body>
+</html>
+ 
