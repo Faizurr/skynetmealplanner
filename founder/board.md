@@ -1,5 +1,17 @@
 # Board summary, 10 October 2026
 
+> **Correction, 11 October 2026.** The brief told the board that almost nobody
+> offers this outside the US or in other languages. `/founder-competitors` found
+> that this is wrong:
+> - Genspark's "Call for Me" already makes local-language AI calls in 7
+>   countries. It reports 180,000 users, and 23% of its calls are translated.
+> - Pine rates 4.5 on the App Store, better than the brief implied.
+>
+> Germany is not on Genspark's list, and Google is US-only, so the beachhead in
+> section 4 still holds, but the gap is narrower. See `founder/competitors.md`.
+> One condition is added to the checklist: choose the launch country from those
+> Genspark and Google don't serve.
+
 The brief is in `founder/board/brief.md`. The members' memos are in
 `founder/board/offers.md`, `monopoly.md` and `product.md`.
 
@@ -73,6 +85,10 @@ No idea got an unconditional FUND.
       *(Monopoly)*
 - [ ] **Have an answer to "why you, once Google ships it free?"** *(Offers,
       Monopoly)*
+- [ ] **Choose the launch country from those Genspark and Google don't serve.**
+      Germany leads; check the Netherlands, Spain and Italy too. Book doctors
+      through Doctolib where it covers them, and call for everything else.
+      *(added after `/founder-competitors`)*
 
 The consumer panel (`/founder-consumer`), pricing (`/founder-pricing`) and the
 CFO (`/founder-cfo`) will test most of these. The completion rate and cost per
