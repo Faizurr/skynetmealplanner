@@ -7,7 +7,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import type { Config } from './config.js';
 import { createPool, checkRlsPosture } from './db.js';
-import { TemplateCipher } from './crypto.js';
+import { TemplateCipher, sha256 } from './crypto.js';
 import { TemplateStore } from './face.js';
 import { RealtimeHub } from './realtime.js';
 import { createMailer } from './mailer.js';
@@ -83,7 +83,13 @@ export async function buildApp(cfg: Config, opts: { logger?: boolean; startRealt
     const rl = (route.config as { rateLimit?: { max?: number } } | undefined)?.rateLimit;
     if (rl?.max) rl.max = Math.ceil(rl.max * cfg.RATE_LIMIT_SCALE);
   });
-  await app.register(rateLimit, { max: Math.ceil(600 * cfg.RATE_LIMIT_SCALE), timeWindow: '1 minute', allowList: (req) => req.url === '/healthz' });
+  await app.register(rateLimit, { max: Math.ceil(600 * cfg.RATE_LIMIT_SCALE), timeWindow: '1 minute', allowList: (req) => req.url === '/healthz',
+    // Kiosks behind one restaurant router share an IP: bucket them by device token instead.
+    keyGenerator: (req) => {
+      const auth = req.headers.authorization;
+      return auth?.startsWith('Bearer ') ? `dev:${sha256(auth.slice(7)).toString('base64url').slice(0, 22)}` : req.ip;
+    },
+  });
 
   installErrorHandler(app);
 

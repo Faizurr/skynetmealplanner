@@ -64,7 +64,7 @@ export class Worker {
            FROM attendance_sessions s JOIN employees e ON e.id = s.employee_id
           WHERE s.restaurant_id = $1 AND s.status = 'open'
             AND (s.check_in_at < $2::timestamptz - make_interval(hours => $3)
-                 OR (s.scheduled_end IS NOT NULL AND s.scheduled_end < $2::timestamptz - make_interval(mins => $4)))
+                 OR (s.scheduled_end IS NOT NULL AND NOT s.needs_review AND s.scheduled_end < $2::timestamptz - make_interval(mins => $4)))
           FOR UPDATE OF s SKIP LOCKED`,
         [restaurantId, now, s.max_session_hours, s.missing_checkout_grace_minutes],
       );

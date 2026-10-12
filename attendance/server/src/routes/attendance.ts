@@ -301,7 +301,9 @@ export function registerAttendanceRoutes(app: FastifyInstance, ctx: AppCtx) {
         await tx.query(`UPDATE attendance_corrections SET status = 'approved', decided_by_user_id = $2, decided_at = now(), session_id = COALESCE(session_id, $3) WHERE id = $1`, [c.id, a.userId, sid]);
         await audit(tx, a.restaurantId, { type: 'user', id: a.userId, ip: req.ip }, 'correction.approved', { type: 'correction', id: c.id }, { session_id: sid });
       }
-      return reply.status(201).send({ id: c.id, status: b.apply_now && canApprove ? 'approved' : 'requested' });
+      // Body is returned (not sent) so Fastify replies only after the transaction has committed.
+      reply.status(201);
+      return { id: c.id, status: b.apply_now && canApprove ? 'approved' : 'requested' };
     });
   });
 

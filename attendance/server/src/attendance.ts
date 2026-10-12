@@ -293,7 +293,7 @@ export async function flagMissingCheckout(
   await tx.query(
     close
       ? `UPDATE attendance_sessions SET status = 'missing_checkout', needs_review = true, updated_at = now() WHERE id = $1 AND status = 'open'`
-      : `UPDATE attendance_sessions SET needs_review = true, updated_at = now() WHERE id = $1 AND status = 'open'`,
+      : `UPDATE attendance_sessions SET needs_review = true, updated_at = now() WHERE id = $1 AND status = 'open' AND NOT needs_review`,
     [s.id],
   );
   const created = await raiseException(tx, r.id, {
