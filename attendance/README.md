@@ -40,6 +40,7 @@ cd ../web && npm ci && npm run dev                # dashboard at http://localhos
 | Security, privacy (PDPA) & pre-production checklist | [docs/SECURITY_PRIVACY.md](docs/SECURITY_PRIVACY.md), [docs/PRIVACY_NOTICE_TEMPLATE.md](docs/PRIVACY_NOTICE_TEMPLATE.md) |
 | Metric definitions | [docs/ANALYTICS.md](docs/ANALYTICS.md) |
 | **Cheapest: one US$1–3 VPS, one-command install** | [docs/VPS_DEPLOY.md](docs/VPS_DEPLOY.md) |
+| **Google Cloud free tier (e2-micro)** | [docs/GCP_FREE_TIER.md](docs/GCP_FREE_TIER.md) |
 | Deployment (managed hosting) & environment variables | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), [.env.example](.env.example) |
 | APK build, install, pairing, enrolment, updates | [docs/APK_INSTALL.md](docs/APK_INSTALL.md), [android/README.md](android/README.md) |
 | Installing the dashboard on iPhone/Android | [docs/PWA_INSTALL.md](docs/PWA_INSTALL.md) |

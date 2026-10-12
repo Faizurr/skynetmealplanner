@@ -8,7 +8,7 @@
 
 | Item | Cost |
 |---|---|
-| 1 GB VPS (budget provider annual promo, or Oracle Cloud Always Free) | ≈ US$0–3 / month |
+| 1 GB VPS (budget provider annual promo, Google Cloud free-tier e2-micro — [GCP_FREE_TIER.md](GCP_FREE_TIER.md) — or Oracle Cloud Always Free) | ≈ US$0–3 / month |
 | Domain (optional; free `sslip.io` / DuckDNS hostname works) | US$0 – ≈ US$1 / month |
 | Email via Gmail SMTP app password (≈500/day) or Resend free tier | US$0 |
 | HTTPS certificate (Let's Encrypt via Caddy) | US$0 |
