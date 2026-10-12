@@ -57,6 +57,21 @@ jobs:
           find app/build/outputs/apk -name '*.apk' -exec sha256sum {} \;
           APKSIGNER=$(ls -d $ANDROID_HOME/build-tools/*/ | sort -V | tail -1)apksigner
           for f in $(find app/build/outputs/apk -name '*.apk'); do echo "== $f"; $APKSIGNER verify --print-certs "$f" || true; done
+      - name: Verify APK contents (models, native libs, permissions, no secrets)
+        run: |
+          BT=$(ls -d $ANDROID_HOME/build-tools/*/ | sort -V | tail -1)
+          for f in app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/release/*.apk; do
+            echo "== $f ($(du -h "$f" | cut -f1))"
+            unzip -l "$f" > contents.txt
+            grep -E "assets/models/face_detection_yunet_2023mar.onnx" contents.txt
+            grep -E "assets/models/face_recognition_sface_2021dec.onnx" contents.txt
+            grep -E "lib/arm64-v8a/libopencv_java4.so" contents.txt
+            grep -E "lib/armeabi-v7a/libopencv_java4.so" contents.txt
+            "$BT/aapt2" dump badging "$f" | grep -E "^package:|sdkVersion|targetSdkVersion|uses-permission|launchable-activity"
+            "$BT/aapt2" dump badging "$f" | grep -q "android.permission.CAMERA"
+            ! unzip -p "$f" 'classes*.dex' | grep -aE "BEGIN (RSA |EC )?PRIVATE KEY|re_[A-Za-z0-9]{20,}|postgres://" || { echo "secret-like string found in dex"; exit 1; }
+          done
+          echo "APK content checks passed"
       - uses: actions/upload-artifact@v4
         with:
           name: kiosk-apks-${{ env.VERSION_NAME }}
