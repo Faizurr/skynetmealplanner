@@ -4,6 +4,22 @@
 > vary. Check each provider's pricing page before buying. Figures use USD list-price tiers as generally published by
 > these providers, converted at an **assumed** US$1 ≈ RM 4.4.
 
+## Cheapest option: single VPS (recommended for one restaurant)
+
+| Item | Cost |
+|---|---|
+| 1 GB VPS (budget provider annual promo, or Oracle Cloud Always Free) | ≈ US$0–3 / month |
+| Domain (optional; free `sslip.io` / DuckDNS hostname works) | US$0 – ≈ US$1 / month |
+| Email via Gmail SMTP app password (≈500/day) or Resend free tier | US$0 |
+| HTTPS certificate (Let's Encrypt via Caddy) | US$0 |
+| App distribution (PWA + sideloaded APK, no app stores) | US$0 |
+| **Total** | **≈ US$0–4 / month (≈ RM 0–18)** + one-off tablet RM 600–1,200 |
+
+Setup: [VPS_DEPLOY.md](VPS_DEPLOY.md). Trade-offs vs managed hosting: you handle OS updates and off-site backups, the
+VPS is a single point of failure (kiosks keep working offline), and budget hosts vary in reliability. A 1 GB VPS
+comfortably serves one restaurant and likely several small ones (the app uses ≈ 85 MB RAM). For the larger scenarios
+below, move to a bigger VPS (2–4 GB, ≈ US$5–12/month) before moving to managed services.
+
 ## Why it is cheap to run
 
 - **Face recognition runs on the tablet**: no per-recognition cloud fees and no video upload. Each event sends about 1 KB.

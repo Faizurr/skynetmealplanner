@@ -1,5 +1,7 @@
 # Deployment guide
 
+> **On a budget?** Use the single-VPS installer instead: [VPS_DEPLOY.md](VPS_DEPLOY.md) (≈ US$1–3/month, one command).
+
 The cloud part is **one container** (API + worker + owner PWA) plus a **managed PostgreSQL 16** database. A Singapore
 region is recommended for low latency from Malaysia.
 

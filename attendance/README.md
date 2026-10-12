@@ -39,7 +39,8 @@ cd ../web && npm ci && npm run dev                # dashboard at http://localhos
 | Face recognition: engine choice, thresholds, liveness limits, on-site evaluation | [docs/FACE_RECOGNITION.md](docs/FACE_RECOGNITION.md), [docs/FACE_EVAL_RESULTS.md](docs/FACE_EVAL_RESULTS.md) |
 | Security, privacy (PDPA) & pre-production checklist | [docs/SECURITY_PRIVACY.md](docs/SECURITY_PRIVACY.md), [docs/PRIVACY_NOTICE_TEMPLATE.md](docs/PRIVACY_NOTICE_TEMPLATE.md) |
 | Metric definitions | [docs/ANALYTICS.md](docs/ANALYTICS.md) |
-| Deployment & environment variables | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), [.env.example](.env.example) |
+| **Cheapest: one US$1–3 VPS, one-command install** | [docs/VPS_DEPLOY.md](docs/VPS_DEPLOY.md) |
+| Deployment (managed hosting) & environment variables | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), [.env.example](.env.example) |
 | APK build, install, pairing, enrolment, updates | [docs/APK_INSTALL.md](docs/APK_INSTALL.md), [android/README.md](android/README.md) |
 | Installing the dashboard on iPhone/Android | [docs/PWA_INSTALL.md](docs/PWA_INSTALL.md) |
 | Backup & restoration | [docs/BACKUP_RESTORE.md](docs/BACKUP_RESTORE.md) |
