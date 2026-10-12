@@ -1,0 +1,37 @@
+# Render Blueprint (https://render.com/docs/blueprint-spec). Region chosen for Malaysia latency.
+# The database is NOT created here: use a managed PostgreSQL in Singapore (Neon, Supabase,
+# or Render Postgres) and create the two roles with deploy/db-roles.sql.
+services:
+  - type: web
+    name: restaurant-attendance
+    runtime: docker
+    rootDir: attendance
+    dockerfilePath: ./Dockerfile
+    region: singapore
+    plan: starter
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: MIGRATION_DATABASE_URL
+        sync: false
+      - key: APP_DB_ROLE
+        value: att_app
+      - key: DATABASE_SSL
+        value: "true"
+      - key: MIGRATE_ON_START
+        value: "true"
+      - key: TEMPLATE_KEYS
+        sync: false
+      - key: TRUST_PROXY
+        value: "true"
+      - key: EMAIL_TRANSPORT
+        value: resend
+      - key: EMAIL_FROM
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
