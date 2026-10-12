@@ -61,8 +61,13 @@ echo "=== install started \$(date -Is)"
 apt-get update -qq && apt-get install -y -qq git
 if [ ! -d /root/src ]; then git clone -b '$BRANCH' '$REPO_URL' /root/src; fi
 cd /root/src/attendance
-DOMAIN='$DOMAIN' LE_EMAIL='$LE_EMAIL' bash deploy/vps/install.sh && touch /var/lib/attendance-installed
-echo "=== install finished \$(date -Is) exit=\$?"
+DOMAIN='$DOMAIN' LE_EMAIL='$LE_EMAIL' bash deploy/vps/install.sh
+rc=\$?
+[ \$rc -eq 0 ] && touch /var/lib/attendance-installed
+echo "=== install finished \$(date -Is) exit=\$rc"
+# Also report on the serial console so the result is visible without SSH.
+echo "attendance-install: exit=\$rc" > /dev/ttyS0
+exit \$rc
 EOF
 
 if gcloud compute instances describe "$VM_NAME" --zone "$ZONE" --project "$PROJECT" >/dev/null 2>&1; then
