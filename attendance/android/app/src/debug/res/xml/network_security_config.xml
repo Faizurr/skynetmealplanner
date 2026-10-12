@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only: cleartext is permitted at the platform level so a local test server
+     (10.0.2.2, localhost, 192.168.x.x) can be used. The app itself still refuses http:// for
+     any other host (ServerUrlValidator). Release builds use src/main/res/xml. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

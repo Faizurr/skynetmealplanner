@@ -117,6 +117,8 @@ export function registerAttendanceRoutes(app: FastifyInstance, ctx: AppCtx) {
         branch_id: uuid.optional(),
         status: z.enum(['verified', 'pending_review', 'rejected']).optional(),
         before: z.string().datetime({ offset: true }).optional(),
+        /** Tie-breaker for the cursor: events sharing the boundary timestamp are paged by id. */
+        before_id: uuid.optional(),
         limit: z.coerce.number().int().min(1).max(500).default(100),
         id: uuid.optional(),
       }),
@@ -128,9 +130,9 @@ export function registerAttendanceRoutes(app: FastifyInstance, ctx: AppCtx) {
           WHERE ev.restaurant_id = $1 AND ($2::timestamptz IS NULL OR ev.event_time >= $2) AND ($3::timestamptz IS NULL OR ev.event_time < $3)
             AND ($4::uuid IS NULL OR ev.employee_id = $4) AND ($5::uuid IS NULL OR ev.branch_id = $5)
             AND ($6::verification_status IS NULL OR ev.verification_status = $6)
-            AND ($7::timestamptz IS NULL OR ev.event_time < $7) AND ($9::uuid IS NULL OR ev.id = $9)
+            AND ($7::timestamptz IS NULL OR (ev.event_time, ev.id) < ($7::timestamptz, COALESCE($10::uuid, 'ffffffff-ffff-ffff-ffff-ffffffffffff'::uuid))) AND ($9::uuid IS NULL OR ev.id = $9)
           ORDER BY ev.event_time DESC, ev.id DESC LIMIT $8`,
-        [a.restaurantId, q.from ?? null, q.to ?? null, q.employee_id ?? null, q.branch_id ?? null, q.status ?? null, q.before ?? null, q.limit, q.id ?? null],
+        [a.restaurantId, q.from ?? null, q.to ?? null, q.employee_id ?? null, q.branch_id ?? null, q.status ?? null, q.before ?? null, q.limit, q.id ?? null, q.before_id ?? null],
       )).rows,
     }));
   });

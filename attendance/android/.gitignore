@@ -1,0 +1,10 @@
+.gradle/
+.kotlin/
+**/build/
+local.properties
+keystore.properties
+*.jks
+*.keystore
+app/src/main/assets/models/*.onnx
+.idea/
+*.iml

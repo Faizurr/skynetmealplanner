@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="kiosk_background">#FFFBF8F3</color>
+    <color name="kiosk_background_dark">#FF12110F</color>
+    <color name="ic_launcher_background">#FF0F6E62</color>
+</resources>

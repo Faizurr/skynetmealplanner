@@ -111,7 +111,9 @@ export async function buildApp(cfg: Config, opts: { logger?: boolean; startRealt
   if (webDir && existsSync(path.join(webDir, 'index.html'))) {
     await app.register(fastifyStatic, {
       root: webDir,
-      wildcard: false,
+      // Serve files present on disk at request time, so a new build works without a restart.
+      wildcard: true,
+      cacheControl: false, // headers are set explicitly in setHeaders below
       setHeaders(res, filePath) {
         const base = path.basename(filePath);
         if (base === 'index.html' || base === 'sw.js' || base === 'manifest.webmanifest' || base.startsWith('workbox-')) {
@@ -124,7 +126,8 @@ export async function buildApp(cfg: Config, opts: { logger?: boolean; startRealt
       },
     });
     app.setNotFoundHandler((req, reply) => {
-      if (req.method === 'GET' && !req.url.startsWith('/api/')) {
+      // Never answer a missing hashed asset with index.html (that causes MIME errors after deploys).
+      if (req.method === 'GET' && !req.url.startsWith('/api/') && !req.url.startsWith('/assets/') && !/\.[a-z0-9]{2,5}(\?|$)/i.test(req.url)) {
         reply.header('Cache-Control', 'no-cache');
         return reply.sendFile('index.html');
       }

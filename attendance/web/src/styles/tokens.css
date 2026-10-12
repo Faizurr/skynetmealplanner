@@ -1,0 +1,217 @@
+/* Design tokens. Light is the default; dark applies via prefers-color-scheme or [data-theme="dark"]. */
+:root {
+  color-scheme: light;
+
+  /* Neutrals (slightly warm) */
+  --bg: #f6f6f4;
+  --surface: #ffffff;
+  --surface-2: #fafaf8;
+  --surface-sunken: #efefec;
+  --surface-hover: #f3f3f0;
+  --border: #e5e5e0;
+  --border-strong: #d0d0c9;
+  --text: #15161a;
+  --text-2: #464951;
+  --text-3: #63666e;
+  --text-inverse: #ffffff;
+  --overlay: rgba(18, 19, 22, 0.42);
+
+  /* One confident accent */
+  --accent: #3049d6;
+  --accent-hover: #263cb8;
+  --accent-soft: #eceffd;
+  --accent-text: #2a40c2;
+  --on-accent: #ffffff;
+  --focus: #3049d6;
+
+  /* Semantic status: text / background / dot */
+  --success-fg: #146a3f;
+  --success-bg: #e6f4ec;
+  --success-dot: #1f9d5c;
+  --warning-fg: #82500a;
+  --warning-bg: #fcf1dc;
+  --warning-dot: #d98a0b;
+  --attention-fg: #6534b8;
+  --attention-bg: #f1ebfc;
+  --attention-dot: #8b5cf6;
+  --error-fg: #a8241a;
+  --error-bg: #fcebe9;
+  --error-dot: #e5483b;
+  --neutral-fg: #464951;
+  --neutral-bg: #efefec;
+  --neutral-dot: #8d9098;
+  --info-fg: #1e5a8a;
+  --info-bg: #e7f0f8;
+  --info-dot: #3b82c4;
+
+  /* Charts */
+  --chart-1: #3049d6;
+  --chart-2: #c47a00;
+  --chart-3: #e5483b;
+  --chart-grid: #e8e8e3;
+  --chart-muted: #cfd3e6;
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI Variable Display', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+  --leading-tight: 1.2;
+  --leading: 1.5;
+  --weight-regular: 400;
+  --weight-medium: 510;
+  --weight-semibold: 600;
+  --weight-bold: 680;
+  --tracking-tight: -0.011em;
+  --tracking-display: -0.022em;
+
+  /* Spacing (4px grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 56px;
+  --gutter: 16px;
+
+  /* Radius */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+
+  /* Elevation */
+  --shadow-xs: 0 1px 0 rgba(20, 21, 26, 0.04);
+  --shadow-sm: 0 1px 2px rgba(20, 21, 26, 0.06), 0 0 0 1px rgba(20, 21, 26, 0.02);
+  --shadow-md: 0 4px 14px rgba(20, 21, 26, 0.08), 0 1px 3px rgba(20, 21, 26, 0.06);
+  --shadow-lg: 0 18px 48px rgba(20, 21, 26, 0.18), 0 2px 8px rgba(20, 21, 26, 0.08);
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur: 200ms;
+
+  /* Layout */
+  --sidebar-w: 248px;
+  --rail-w: 72px;
+  --topbar-h: 56px;
+  --tabbar-h: 58px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --touch: 44px;
+}
+
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: #111214;
+    --surface: #18191c;
+    --surface-2: #1d1e22;
+    --surface-sunken: #141518;
+    --surface-hover: #212227;
+    --border: #2a2b31;
+    --border-strong: #3a3c43;
+    --text: #ededeb;
+    --text-2: #b9bbc1;
+    --text-3: #93959c;
+    --text-inverse: #111214;
+    --overlay: rgba(0, 0, 0, 0.6);
+    --accent: #7088ff;
+    --accent-hover: #889cff;
+    --accent-soft: rgba(112, 136, 255, 0.14);
+    --accent-text: #a1b0ff;
+    --on-accent: #0b1030;
+    --focus: #8ea0ff;
+    --success-fg: #6fd6a2;
+    --success-bg: rgba(31, 157, 92, 0.16);
+    --success-dot: #3cc47f;
+    --warning-fg: #f3bd62;
+    --warning-bg: rgba(217, 138, 11, 0.17);
+    --warning-dot: #eaa32c;
+    --attention-fg: #c0a6ff;
+    --attention-bg: rgba(139, 92, 246, 0.2);
+    --attention-dot: #a585ff;
+    --error-fg: #ff958b;
+    --error-bg: rgba(229, 72, 59, 0.17);
+    --error-dot: #ff6b5e;
+    --neutral-fg: #b9bbc1;
+    --neutral-bg: rgba(255, 255, 255, 0.07);
+    --neutral-dot: #7d8088;
+    --info-fg: #8cc0f0;
+    --info-bg: rgba(59, 130, 196, 0.18);
+    --info-dot: #5fa5e6;
+    --chart-1: #7088ff;
+    --chart-2: #b07a18;
+    --chart-3: #ff6b5e;
+    --chart-grid: #2a2b31;
+    --chart-muted: #3b4160;
+    --shadow-xs: 0 1px 0 rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.02);
+    --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 20px 56px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #111214;
+  --surface: #18191c;
+  --surface-2: #1d1e22;
+  --surface-sunken: #141518;
+  --surface-hover: #212227;
+  --border: #2a2b31;
+  --border-strong: #3a3c43;
+  --text: #ededeb;
+  --text-2: #b9bbc1;
+  --text-3: #93959c;
+  --text-inverse: #111214;
+  --overlay: rgba(0, 0, 0, 0.6);
+  --accent: #7088ff;
+  --accent-hover: #889cff;
+  --accent-soft: rgba(112, 136, 255, 0.14);
+  --accent-text: #a1b0ff;
+  --on-accent: #0b1030;
+  --focus: #8ea0ff;
+  --success-fg: #6fd6a2;
+  --success-bg: rgba(31, 157, 92, 0.16);
+  --success-dot: #3cc47f;
+  --warning-fg: #f3bd62;
+  --warning-bg: rgba(217, 138, 11, 0.17);
+  --warning-dot: #eaa32c;
+  --attention-fg: #c0a6ff;
+  --attention-bg: rgba(139, 92, 246, 0.2);
+  --attention-dot: #a585ff;
+  --error-fg: #ff958b;
+  --error-bg: rgba(229, 72, 59, 0.17);
+  --error-dot: #ff6b5e;
+  --neutral-fg: #b9bbc1;
+  --neutral-bg: rgba(255, 255, 255, 0.07);
+  --neutral-dot: #7d8088;
+  --info-fg: #8cc0f0;
+  --info-bg: rgba(59, 130, 196, 0.18);
+  --info-dot: #5fa5e6;
+  --chart-1: #7088ff;
+  --chart-2: #b07a18;
+  --chart-3: #ff6b5e;
+  --chart-grid: #2a2b31;
+  --chart-muted: #3b4160;
+  --shadow-xs: 0 1px 0 rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.02);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 56px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+}

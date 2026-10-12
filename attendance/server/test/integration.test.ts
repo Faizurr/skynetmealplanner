@@ -641,6 +641,22 @@ describe('dashboard data, analytics, reports, realtime', () => {
     assert.equal(feed.json.events[0].device_name, 'Front door kiosk');
   });
 
+  test('overnight shift that started yesterday shows on today\'s roster (no-show is late, not "not yet due")', async () => {
+    // Shift 23:00 → 22:00 next day (23 h, crosses midnight): at any time except 22:00–23:00 local, an occurrence is in progress.
+    const h0 = toLocalParts(new Date(), KL).hour;
+    if (h0 === 22) return; // the only hour with no shift in progress
+    const o = await signupOwner(h, 'night');
+    const sh = await o.web.post('/api/shifts', { name: 'Night', start_time: '23:00', end_time: '22:00', days_of_week: [1, 2, 3, 4, 5, 6, 7], grace_minutes: 5 });
+    await h.owner.query(`UPDATE shift_assignments SET effective_from = CURRENT_DATE - 2 WHERE restaurant_id = $1`, [o.restaurantId]);
+    const emp = await createEmployee(o.web, { full_name: 'Night Owl', staff_id: 'N1', shift_ids: [sh.json.shift.id] });
+    await h.owner.query(`UPDATE shift_assignments SET effective_from = CURRENT_DATE - 2 WHERE employee_id = $1`, [emp.id]);
+    const ov = await o.web.get('/api/overview');
+    const row = ov.json.roster.find((x: any) => x.employee.id === emp.id);
+    assert.ok(row, 'employee on roster');
+    assert.equal(row.status, 'late_not_arrived');
+    assert.equal(ov.json.metrics.expected_today, 1);
+  });
+
   test('SSE stream pushes committed attendance changes to the dashboard', async () => {
     const o = await signupOwner(h, 'sse');
     const { kiosk } = await pairKiosk(h, o.web);

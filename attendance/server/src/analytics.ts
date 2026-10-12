@@ -101,7 +101,10 @@ export async function overview(tx: Tx, r: RestaurantCtx, date: string, branchId:
   const employees = await loadEmployees(tx, r.id, branchId);
   const active = employees.filter((e) => e.status === 'active');
   const assignments = await loadAllAssignments(tx, r.id);
-  const sessions = await loadSessions(tx, r.id, start, end, branchId);
+  // Include yesterday so overnight shifts that started before midnight and are still running count "today".
+  const prevStart = localDayRange(addDays(date, -1), tz).start;
+  const allSessions = await loadSessions(tx, r.id, prevStart, end, branchId);
+  const sessions = allSessions.filter((s) => s.effective_in >= start || (s.scheduled_start != null && s.scheduled_start >= start));
   const openSessions = (
     await tx.query<SessionLite>(
       `SELECT id, employee_id, branch_id, status, check_in_at, check_out_at, check_in_at AS effective_in, NULL AS effective_out,
@@ -134,13 +137,19 @@ export async function overview(tx: Tx, r: RestaurantCtx, date: string, branchId:
   let expected = 0;
   let late = 0;
   for (const e of active) {
-    const occ = occurrencesFor(assignments.get(e.id) ?? [], [date], tz);
-    const empSessions = sessionsByEmp.get(e.id) ?? [];
+    // Shifts starting today, plus last night's overnight shift if it runs into today.
+    const occ = occurrencesFor(assignments.get(e.id) ?? [], [addDays(date, -1), date], tz).filter(
+      (o) => o.localDate === date || o.end.getTime() > start.getTime(),
+    );
+    const firstOcc = occ[0] ?? null;
+    const linked = firstOcc
+      ? allSessions.find((s) => s.employee_id === e.id && s.shift_id === firstOcc.shift.id && s.scheduled_start?.getTime() === firstOcc.start.getTime())
+      : undefined;
+    const empSessions = [...(sessionsByEmp.get(e.id) ?? [])];
+    if (linked && !empSessions.includes(linked)) empSessions.unshift(linked);
     const open = openByEmp.get(e.id);
     if (occ.length) expected++;
     for (const s of empSessions) if (s.is_late) late++;
-    const firstOcc = occ[0] ?? null;
-    const linked = firstOcc ? empSessions.find((s) => s.shift_id === firstOcc.shift.id && s.scheduled_start?.getTime() === firstOcc.start.getTime()) : undefined;
     const latest = open ?? empSessions[empSessions.length - 1];
     let status: RosterStatus | null = null;
     if (open) status = open.shift_id ? 'working' : 'unscheduled_working';
