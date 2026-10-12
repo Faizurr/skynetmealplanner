@@ -34,6 +34,8 @@ Honest status as of this delivery. "Verified" means an automated test or a real 
 - **SMTP retries after a crash mid-send** can, rarely, duplicate an email (Resend uses an idempotency key; SMTP cannot).
 - **Payroll exports are provisional** by design.
 - **Native date pickers** in the dashboard show the browser's date format; all other dates use the en-MY format.
+- **APK size** is ~130 MB because OpenCV native libraries for three CPU types and the 39 MB recognition model are bundled.
+  Building an arm64-only APK (most current tablets) would roughly halve it.
 - **Lint** on the Android `:app` module is non-blocking for the first builds (`abortOnError=false`).
 
 ## Suggested next steps
