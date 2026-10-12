@@ -1,0 +1,16 @@
+node_modules/
+dist/
+*.log
+.env
+.env.*
+!.env.example
+models/*.onnx
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/src/main/assets/models/*.onnx
+*.jks
+*.keystore
+tools/face-eval/data/
+tools/face-eval/.venv/

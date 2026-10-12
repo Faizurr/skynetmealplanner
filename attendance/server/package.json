@@ -1,0 +1,40 @@
+{
+  "name": "attendance-server",
+  "version": "1.0.0",
+  "description": "Restaurant attendance platform API",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts",
+    "migrate": "tsx src/migrate.ts",
+    "migrate:prod": "node dist/migrate.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test --test-concurrency=1 test/*.test.ts",
+    "create-release": "tsx src/cli/create-release.ts"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@fastify/cookie": "^11.1.3",
+    "@fastify/helmet": "^13.1.2",
+    "@fastify/rate-limit": "^10.3.0",
+    "@fastify/static": "^8.3.0",
+    "fastify": "^5.12.5",
+    "nodemailer": "^10.1.0",
+    "pg": "^8.23.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/nodemailer": "^8.0.2",
+    "@types/pg": "^8.23.1",
+    "@types/smtp-server": "^3.5.13",
+    "smtp-server": "^3.19.21",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  },
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  }
+}
