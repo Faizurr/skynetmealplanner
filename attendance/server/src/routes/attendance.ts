@@ -8,6 +8,7 @@ import { claimKey, computeDuration, computeLateness, resolveShiftForCheckIn } fr
 import { streamToReply } from '../realtime.js';
 import { HttpError, notFound, parse, requireUser, uuid, ymd, type AppCtx } from '../http.js';
 import { runAttendance } from './kiosk.js';
+import { syncPayoutForSession } from '../payroll.js';
 
 export const EVENT_SELECT = `
   SELECT ev.id, ev.event_type, ev.event_time, ev.device_timestamp, ev.server_received_at, ev.source, ev.verification_status,
@@ -209,6 +210,7 @@ export function registerAttendanceRoutes(app: FastifyInstance, ctx: AppCtx) {
             [ev.session_id],
           );
         }
+        await syncPayoutForSession(tx, await loadRestaurant(tx, a.restaurantId, ctx.cfg.PUBLIC_BASE_URL), ev.session_id);
       }
       await tx.query(`UPDATE attendance_exceptions SET status = 'resolved', resolved_at = now(), resolved_by_user_id = $2, resolution_note = $3 WHERE event_id = $1 AND status = 'open'`, [id, a.userId, `Event ${status}`]);
       await audit(tx, a.restaurantId, { type: 'user', id: a.userId, ip: req.ip }, `attendance.review_${b.decision}`, { type: 'attendance_event', id }, { note: b.note });
@@ -300,6 +302,7 @@ export function registerAttendanceRoutes(app: FastifyInstance, ctx: AppCtx) {
       await audit(tx, a.restaurantId, { type: 'user', id: a.userId, ip: req.ip }, 'correction.requested', { type: 'correction', id: c.id }, { kind: b.kind, session_id: b.session_id });
       if (b.apply_now && canApprove) {
         const sid = await applyCorrection(tx, r, c, a.userId);
+        await syncPayoutForSession(tx, r, sid);
         await tx.query(`UPDATE attendance_corrections SET status = 'approved', decided_by_user_id = $2, decided_at = now(), session_id = COALESCE(session_id, $3) WHERE id = $1`, [c.id, a.userId, sid]);
         await audit(tx, a.restaurantId, { type: 'user', id: a.userId, ip: req.ip }, 'correction.approved', { type: 'correction', id: c.id }, { session_id: sid });
       }
@@ -319,7 +322,10 @@ export function registerAttendanceRoutes(app: FastifyInstance, ctx: AppCtx) {
       if (!c) throw notFound('Correction');
       if (c.status !== 'requested') throw new HttpError(409, 'already_decided', 'This correction was already decided');
       let sid = c.session_id;
-      if (decision === 'approve') sid = await applyCorrection(tx, r, c, a.userId);
+      if (decision === 'approve') {
+        sid = await applyCorrection(tx, r, c, a.userId);
+        await syncPayoutForSession(tx, r, sid);
+      }
       await tx.query(`UPDATE attendance_corrections SET status = $2, decided_by_user_id = $3, decided_at = now(), decision_note = $4, session_id = COALESCE(session_id, $5) WHERE id = $1`, [id, decision === 'approve' ? 'approved' : 'rejected', a.userId, b.note ?? null, sid]);
       await audit(tx, a.restaurantId, { type: 'user', id: a.userId, ip: req.ip }, `correction.${decision}d`, { type: 'correction', id }, { note: b.note });
       return { ok: true };

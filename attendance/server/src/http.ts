@@ -98,7 +98,10 @@ export type Permission =
   | 'settings.manage'
   | 'team.manage'
   | 'audit.read'
-  | 'reports.export';
+  | 'reports.export'
+  | 'payroll.view'
+  | 'payroll.pay'
+  | 'payroll.rates';
 
 const ALL: Role[] = ['owner', 'manager', 'attendance_admin'];
 const MGMT: Role[] = ['owner', 'manager'];
@@ -118,6 +121,10 @@ export const PERMISSIONS: Record<Permission, Role[]> = {
   'team.manage': ['owner'],
   'audit.read': MGMT,
   'reports.export': ALL,
+  'payroll.view': MGMT,
+  'payroll.pay': MGMT,
+  /** Only the boss sets salaries and reopens paid payouts. */
+  'payroll.rates': ['owner'],
 };
 
 export function can(role: Role, p: Permission): boolean {

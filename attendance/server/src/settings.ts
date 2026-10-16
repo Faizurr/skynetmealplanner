@@ -37,6 +37,12 @@ export const restaurantSettingsSchema = z.object({
   /** How early (minutes) before a shift starts a check-in is attributed to it. */
   early_check_in_window_minutes: z.number().int().min(0).max(720).default(180),
 
+  // Payroll. Daily salary covers a standard day of this many hours; OT per hour = salary ÷ standard hours.
+  payroll_standard_hours: z.number().min(1).max(24).default(12),
+  /** full = the day salary is paid for any completed day; prorate = pay worked hours for short days. */
+  payroll_short_day_policy: z.enum(['full', 'prorate']).default('full'),
+  currency: z.string().regex(/^[A-Z]{3}$/).default('MYR'),
+
   // Reporting
   rounding_minutes: z.number().int().refine((v) => [0, 1, 5, 6, 10, 15, 30].includes(v)).default(0),
   rounding_mode: z.enum(['nearest', 'down', 'up']).default('nearest'),

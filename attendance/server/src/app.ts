@@ -20,6 +20,7 @@ import { registerAttendanceRoutes } from './routes/attendance.js';
 import { registerAdminRoutes } from './routes/admin.js';
 import { registerInsightRoutes } from './routes/insights.js';
 import { registerAppRoutes } from './routes/app.js';
+import { registerPayrollRoutes } from './routes/payroll.js';
 
 export interface BuiltApp {
   app: FastifyInstance;
@@ -106,6 +107,7 @@ export async function buildApp(cfg: Config, opts: { logger?: boolean; startRealt
   registerAttendanceRoutes(app, ctx);
   registerAdminRoutes(app, ctx);
   registerInsightRoutes(app, ctx);
+  registerPayrollRoutes(app, ctx);
 
   const webDir = cfg.WEB_DIST_DIR ? path.resolve(cfg.WEB_DIST_DIR) : null;
   if (webDir && existsSync(path.join(webDir, 'index.html'))) {

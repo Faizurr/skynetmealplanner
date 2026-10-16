@@ -13,6 +13,7 @@ import {
 } from './shifts.js';
 import { formatDate, formatDuration, formatTime, toLocalParts } from './time.js';
 import { enqueueNotification, eventEmailRows, renderEmail } from './notifications.js';
+import { formatMoney, syncPayoutForSession, type PayoutRow } from './payroll.js';
 
 export type Action = 'check_in' | 'check_out';
 
@@ -571,7 +572,11 @@ export async function recordAttendance(
     employee_id: emp.id, source, verification, flags, match_score: matchScore,
   });
 
-  // 6. Exceptions + notifications (outbox; delivered asynchronously).
+  // 6. Payroll: every completed session gets a payout the manager settles (cash / QR / pending).
+  let payout: PayoutRow | null = null;
+  if (input.action === 'check_out' && session?.check_out_at) payout = await syncPayoutForSession(tx, r, session.id);
+
+  // 7. Exceptions + notifications (outbox; delivered asynchronously).
   const bname = await branchName(tx, branchId);
   const link = `${r.publicBaseUrl}/#/attendance?event=${input.eventId}`;
   const typeLabel = input.action === 'check_in' ? 'Check-in' : 'Check-out';
@@ -619,6 +624,9 @@ export async function recordAttendance(
           ...eventEmailRows(ns, { employeeName: emp.full_name, staffId: emp.staff_id, type: typeLabel, at: eventTime, tz: r.timezone, branch: bname, status: statusText }),
           ...(session?.scheduled_start && input.action === 'check_in' ? [['Scheduled start', formatTime(session.scheduled_start, r.timezone)] as [string, string]] : []),
           ...(baseFlagsForNotify.includes('offline') ? [['Note', 'Captured while the kiosk was offline; synced later.'] as [string, string]] : []),
+          ...(payout && payout.status === 'pending'
+            ? [['Pay due', payout.rate_missing ? 'Salary not set yet' : `${formatMoney(payout.total_cents, r.settings.currency)}${payout.ot_minutes > 0 ? ` (incl. ${formatDuration(payout.ot_minutes)} OT)` : ''}`] as [string, string]]
+            : []),
         ],
         link: { href: link, label: 'Open in dashboard' },
       });
