@@ -1,12 +1,16 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
-  Activity, BarChart3, Bell, CalendarClock, ClipboardCheck, Clock, Home, LayoutGrid, Menu, Moon, ScanFace, Settings, Sun, SunMoon,
-  Tablet, Users, WifiOff, type LucideIcon,
+  Activity, BadgeDollarSign, BarChart3, Bell, CalendarClock, ClipboardCheck, Clock, Home, LayoutGrid, Menu, Moon, ScanFace, Settings, Sun, SunMoon,
+  Tablet, Trophy, Users, Wallet, WifiOff, type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useRealtime } from '../lib/realtime';
 import { useOnline, useQuery } from '../lib/useQuery';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from './Toast';
+import { fmtMoney } from '../lib/money';
+import type { PayoutsResponse } from '../lib/types';
 import { api } from '../lib/api';
 import type { Overview, Permission } from '../lib/types';
 import { readThemePref, saveThemePref, type ThemePref } from '../lib/theme';
@@ -24,6 +28,7 @@ interface NavItem {
 
 export const NAV: NavItem[] = [
   { to: '/', label: 'Today', icon: Home },
+  { to: '/pay', label: 'Pay', icon: Wallet, perm: 'payroll.view' },
   { to: '/live', label: 'Live feed', icon: Activity },
   { to: '/attendance', label: 'Timesheets', icon: Clock },
   { to: '/staff', label: 'Staff', icon: Users, perm: 'employees.read' },
@@ -31,7 +36,9 @@ export const NAV: NavItem[] = [
   { to: '/corrections', label: 'Corrections', icon: ClipboardCheck, count: (m) => m.pending_corrections, section: 'Review' },
   { to: '/enrollments', label: 'Face enrollments', icon: ScanFace, perm: 'biometrics.manage', count: (m) => m.pending_enrollments },
   { to: '/insights', label: 'Insights & reports', icon: BarChart3 },
+  { to: '/leaderboard', label: 'Leaderboard', icon: Trophy },
   { to: '/shifts', label: 'Shifts', icon: CalendarClock, section: 'Setup' },
+  { to: '/salaries', label: 'Salaries', icon: BadgeDollarSign, perm: 'payroll.view' },
   { to: '/devices', label: 'Kiosks', icon: Tablet },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
@@ -39,6 +46,9 @@ export const NAV: NavItem[] = [
 const TITLES: [RegExp, string][] = [
   [/^\/$/, 'Today'],
   [/^\/live/, 'Live feed'],
+  [/^\/pay/, 'Pay'],
+  [/^\/salaries/, 'Salaries'],
+  [/^\/leaderboard/, 'Leaderboard'],
   [/^\/attendance/, 'Timesheets'],
   [/^\/staff/, 'Staff'],
   [/^\/alerts/, 'Alerts'],
@@ -50,6 +60,56 @@ const TITLES: [RegExp, string][] = [
   [/^\/settings/, 'Settings'],
   [/^\/more/, 'More'],
 ];
+
+/** Paths that live in the mobile bottom bar (everything else is under More). */
+export const TAB_PATHS = (payroll: boolean) => ['/', payroll ? '/pay' : '/live', '/staff', '/alerts'];
+
+/** When a staff member checks out, offer the manager a one-tap way to settle that day's pay. */
+function usePayoutAlerts(enabled: boolean) {
+  const { subscribe } = useRealtime();
+  const toast = useToast();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!enabled) return undefined;
+    // Several check-outs at once (shift change, offline sync) become one alert instead of a stack.
+    let batch: string[] = [];
+    let timer: number | undefined;
+    const flush = async () => {
+      const ids = batch;
+      batch = [];
+      try {
+        const list = (await Promise.all(ids.map((id) => api.get<PayoutsResponse>('/api/payouts', { status: 'all', id }))))
+          .map((r) => ({ p: r.payouts[0], currency: r.currency }))
+          .filter((x) => x.p && x.p.status === 'pending');
+        if (!list.length) return;
+        if (list.length === 1) {
+          const { p, currency } = list[0];
+          const who = p.preferred_name || p.full_name.split(' ')[0];
+          toast.show({
+            kind: 'info',
+            message: p.rate_missing ? `${who} checked out · salary not set` : `${who} checked out · ${fmtMoney(p.total_cents, currency)} due`,
+            action: { label: 'Pay', onClick: () => navigate(`/pay?payout=${p.id}`) },
+          });
+        } else {
+          const total = list.reduce((a, x) => a + (x.p.rate_missing ? 0 : x.p.total_cents), 0);
+          toast.show({ kind: 'info', message: `${list.length} staff checked out · ${fmtMoney(total, list[0].currency)} due`, action: { label: 'Pay', onClick: () => navigate('/pay') } });
+        }
+      } catch {
+        /* alerts are best-effort */
+      }
+    };
+    const unsub = subscribe((msg) => {
+      if (!msg || msg.table !== 'payouts' || msg.op !== 'INSERT') return;
+      batch.push(msg.id);
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => void flush(), 1200);
+    });
+    return () => {
+      window.clearTimeout(timer);
+      unsub();
+    };
+  }, [enabled, subscribe, toast, navigate]);
+}
 
 export function ConnectionIndicator() {
   const { state } = useRealtime();
@@ -87,13 +147,23 @@ export function Shell({ children }: { children: ReactNode }) {
   const online = useOnline();
   const [railOpen, setRailOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [titled, setTitled] = useState(false);
   const counts = useQuery((s) => api.get<Overview>('/api/overview', undefined, s).then((o) => o.metrics), [], {
     tables: ['attendance_exceptions', 'attendance_events', 'face_enrollments', 'attendance_sessions'],
   });
   const m = counts.data;
+  const payroll = can('payroll.view');
+  const pay = useQuery((s) => api.get<PayoutsResponse>('/api/payouts', { status: 'pending', limit: 1 }, s).then((r) => r.summary.pending_count), [], {
+    tables: ['payouts'], enabled: payroll,
+  });
+  const payBadge = payroll ? pay.data ?? 0 : 0;
+  usePayoutAlerts(can('payroll.pay'));
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 4);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 4);
+      setTitled(window.scrollY > 52);
+    };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -106,7 +176,8 @@ export function Shell({ children }: { children: ReactNode }) {
   const title = TITLES.find(([re]) => re.test(loc.pathname))?.[1] ?? '';
   const items = NAV.filter((n) => !n.perm || can(n.perm));
   const alertsBadge = m ? m.open_exceptions : 0;
-  const moreActive = !['/', '/live', '/staff', '/alerts'].some((p) => (p === '/' ? loc.pathname === '/' : loc.pathname.startsWith(p)));
+  const tabs = TAB_PATHS(payroll);
+  const moreActive = !tabs.some((p) => (p === '/' ? loc.pathname === '/' : loc.pathname.startsWith(p)));
 
   return (
     <div className={`shell ${railOpen ? 'rail-open' : ''}`}>
@@ -122,7 +193,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <IconButton icon={Menu} label={railOpen ? 'Collapse navigation' : 'Expand navigation'} className="rail-toggle" aria-expanded={railOpen} onClick={() => setRailOpen((o) => !o)} />
         <nav className="nav" aria-label="Main navigation">
           {items.map((n) => {
-            const c = m && n.count ? n.count(m) : 0;
+            const c = n.to === '/pay' ? payBadge : m && n.count ? n.count(m) : 0;
             return (
               <div key={n.to}>
                 {n.section && <div className="nav-section">{n.section}</div>}
@@ -142,7 +213,7 @@ export function Shell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="main">
-        <header className={`topbar ${scrolled ? 'scrolled' : ''}`}>
+        <header className={`topbar ${scrolled ? 'scrolled' : ''} ${titled ? 'titled' : ''}`}>
           <img className="brand-mark only-mobile" src="/favicon.svg" alt="" width={26} height={26} style={{ width: 26, height: 26, borderRadius: 7 }} />
           <div className="topbar-title truncate">
             <span className="hide-mobile">{title}</span>
@@ -169,10 +240,18 @@ export function Shell({ children }: { children: ReactNode }) {
           <Home aria-hidden />
           Today
         </NavLink>
-        <NavLink to="/live" className="tab">
-          <Activity aria-hidden />
-          Live
-        </NavLink>
+        {payroll ? (
+          <NavLink to="/pay" className="tab">
+            <Wallet aria-hidden />
+            Pay
+            {payBadge > 0 && <span className="tab-badge" aria-label={`${payBadge} unpaid`}>{payBadge > 99 ? '99+' : payBadge}</span>}
+          </NavLink>
+        ) : (
+          <NavLink to="/live" className="tab">
+            <Activity aria-hidden />
+            Live
+          </NavLink>
+        )}
         {can('employees.read') && (
           <NavLink to="/staff" className="tab">
             <Users aria-hidden />

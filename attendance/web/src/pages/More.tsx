@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ChevronRight, LogOut } from 'lucide-react';
 import { useAuth } from '../lib/auth';
-import { NAV } from '../components/Layout';
+import { NAV, TAB_PATHS } from '../components/Layout';
 import { Button, Card, PageHead } from '../components/ui';
 import { RestaurantSwitcher } from '../components/RestaurantSwitcher';
 import { ROLE_LABELS } from '../lib/status';
@@ -9,7 +9,8 @@ import { ROLE_LABELS } from '../lib/status';
 /** Mobile "More" tab: everything not in the bottom bar. */
 export function MorePage() {
   const { me, can, signOut } = useAuth();
-  const items = NAV.filter((n) => !['/', '/live', '/staff', '/alerts'].includes(n.to) && (!n.perm || can(n.perm)));
+  const tabs = TAB_PATHS(can('payroll.view'));
+  const items = NAV.filter((n) => !tabs.includes(n.to) && (!n.perm || can(n.perm)));
   return (
     <>
       <PageHead title="More" lede={me ? `${me.user.full_name} · ${ROLE_LABELS[me.role]}` : undefined} />

@@ -20,6 +20,9 @@ const InsightsPage = lazy(() => import('./pages/Insights').then((m) => ({ defaul
 const ShiftsPage = lazy(() => import('./pages/Shifts').then((m) => ({ default: m.ShiftsPage })));
 const DevicesPage = lazy(() => import('./pages/Devices').then((m) => ({ default: m.DevicesPage })));
 const SettingsRoutes = lazy(() => import('./pages/settings/Settings').then((m) => ({ default: m.SettingsRoutes })));
+const PayPage = lazy(() => import('./pages/Pay').then((m) => ({ default: m.PayPage })));
+const SalariesPage = lazy(() => import('./pages/Salaries').then((m) => ({ default: m.SalariesPage })));
+const LeaderboardPage = lazy(() => import('./pages/Leaderboard').then((m) => ({ default: m.LeaderboardPage })));
 const MorePage = lazy(() => import('./pages/More').then((m) => ({ default: m.MorePage })));
 
 function UpdatePrompt() {
@@ -95,6 +98,9 @@ function Gate() {
             <Route path="/shifts" element={<ShiftsPage />} />
             <Route path="/devices" element={<DevicesPage />} />
             <Route path="/settings/*" element={<SettingsRoutes />} />
+            <Route path="/pay" element={<PayPage />} />
+            <Route path="/salaries" element={<SalariesPage />} />
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/more" element={<MorePage />} />
             <Route path="/signup" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />

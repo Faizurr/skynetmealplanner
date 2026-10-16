@@ -36,7 +36,7 @@ audit.read, reports.export`). A 403 `forbidden` is returned otherwise.
 
 `GET /api/stream` — Server-Sent Events (cookie auth; use `new EventSource('/api/stream')`).
 Events: `ready` (on connect) and `change` with data `{table, op, id}` where table ∈
-`attendance_events | attendance_sessions | attendance_exceptions | devices | employees | face_enrollments`.
+`attendance_events | attendance_sessions | attendance_exceptions | devices | employees | face_enrollments | payouts`.
 The client should re-fetch the affected view (debounce ~300 ms). EventSource auto-reconnects (`retry: 3000`).
 
 ## Overview & analytics
@@ -120,6 +120,46 @@ Insights are only produced when the data supports them; an empty list is normal.
 | `POST /api/notifications/deliveries/:id/retry` | |
 | `GET/POST /api/team`, `PATCH/DELETE /api/team/:userId` | POST `{email, full_name, role}` → `{user_id, temporary_password|null}` (show once) |
 | `GET /api/audit?limit&before(id)&entity_id` | `id, actor_type, actor_name, action, entity_type, entity_id, details, created_at` |
+
+## Payroll: salaries, payouts, payslip photos
+
+Money is stored in integer **sen** (`*_cents`). Request bodies take ringgit as a number (`150` or `150.5`).
+Pay for a day = **daily salary** (covers `payroll_standard_hours`, default 12) **+ overtime**, where
+overtime per hour = daily salary ÷ 12 and overtime minutes = worked minutes − 720, rounded with the restaurant's
+`rounding_minutes` / `rounding_mode`. Short days pay the full day (`payroll_short_day_policy: 'full'`, default) or are
+pro-rated (`'prorate'`). Both settings live in `PUT /api/settings`.
+
+Each **completed** session (check-out recorded) gets exactly one payout, created in the same transaction as the check-out
+(`status: 'pending'`). Corrections and event reviews recalculate a pending payout, cancel it (`void`) if the session is no
+longer complete, or, if it is already paid, leave the amount untouched and set `needs_review` with a reason. A database
+trigger refuses any change to the money fields of a paid payout.
+
+Permissions: `payroll.view` and `payroll.pay` owner + manager; `payroll.rates` (salaries, undo a payment) owner only.
+
+| Method & path | Notes |
+|---|---|
+| `GET /api/payroll/rates` | `{standard_hours, short_day_policy, currency, today, employees:[{employee_id, full_name, preferred_name, staff_id, job_title, has_photo, daily_rate_cents|null, effective_from, upcoming_rate_cents, upcoming_from}]}` |
+| `GET /api/employees/:id/rates` | `{rates:[{daily_rate_cents, effective_from, created_at, set_by}]}` newest first |
+| `PUT /api/employees/:id/rate` | `{daily_rate, effective_from? 'YYYY-MM-DD'}` (owner) → `{ok, daily_rate_cents, hourly_ot_cents, effective_from, pending_payouts_refreshed}`. Paid days never change. |
+| `GET /api/payouts?status=pending|paid|void|all&employee_id&from&to&limit&id` | `{currency, standard_hours, summary:{pending_count, pending_cents, rate_missing_count, needs_review_count, paid_month_cents, paid_month_cash_cents, paid_month_qr_cents}, pending_by_employee:[{employee_id, full_name, preferred_name, cents, count}], payouts:[…]}`. A payout has `id, session_id, employee_id, full_name, work_date, check_in_at, check_out_at, worked_minutes, standard_minutes, ot_minutes, daily_rate_cents, base_cents, ot_cents, adjustment_cents, adjustment_reason, total_cents, rate_missing, needs_review, review_reason, status, method(cash|qr|null), pay_note, paid_at, paid_by, has_proof` |
+| `POST /api/payouts/:id/pay` | `{method:'cash'|'qr', photo_base64?, note?}` (body ≤ 6 MB). Photo: data URL or base64 JPEG/PNG/WebP ≤ 4 MB, checked by magic bytes. **Cash requires a photo** (`400 photo_required`); QR photo optional. `409 not_pending` if already paid/cancelled, `409 rate_missing` if no salary yet. |
+| `GET /api/payouts/:id/proof` | the payslip / transfer photo (`Cache-Control: private, max-age=600`) |
+| `POST /api/payouts/:id/note` | `{note}`: keep pending with a note, e.g. "Friday" |
+| `POST /api/payouts/:id/adjust` | `{adjustment (±RM), reason}` pending only; total cannot go below 0 |
+| `POST /api/payouts/:id/reopen` | `{reason}` owner only: undo a payment recorded by mistake (photo kept, amounts recalculated) |
+| `POST /api/payouts/:id/resolve-review` | clears `needs_review` after checking a paid day whose attendance changed |
+| `GET /api/reports/payouts.csv?from&to` | one row per payout with method, paid by/at, proof yes/no |
+
+Realtime: payout inserts/updates arrive on the SSE stream as `{table:'payouts', op, id}`; the dashboard shows
+"Siti checked out · RM 165.63 due [Pay]". The check-out email includes a "Pay due" line.
+
+## Leaderboard
+
+`GET /api/leaderboard?period=week|month|last_month|custom&from&to&branch_id` (any signed-in role) →
+`{period, from, to, timezone, restaurant, points:{onTime:10, dayWorked:5, late:-5, missingCheckout:-10}, rows:[{rank, employee_id,
+full_name, preferred_name, has_photo, points, days_worked, worked_minutes, on_time, late, missing_checkouts,
+punctuality_rate|null, streak}], awards:[{id:'punctual'|'hours'|'streak', title, detail, employee_id}]}`.
+Points floor at 0; ties share a rank (1, 1, 3). Contains no pay data. The PWA renders a 1080×1350 PNG to share.
 
 ## Reports (CSV downloads, link directly with `<a href download>`)
 

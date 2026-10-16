@@ -40,8 +40,31 @@ Recognition fails → no event, nothing guessed → `unknown_face` alert (no ima
 
 ## Owner: daily use (mobile first)
 
-Today: who's working, who's late or not here yet, needs-attention list → Live feed → Alerts (missing check-outs, unknown
+Today: who's working, who's late or not here yet, needs-attention list → Pay (what's owed) → Live feed → Alerts (missing check-outs, unknown
 faces, offline kiosks, items to review) → fix with corrections → Insights/Reports at month end (CSV timesheet marked provisional).
+
+## Paying salaries (owner sets salaries, manager pays)
+
+1. **Owner → More → Salaries**: tap a staff member and enter the **daily salary** (covers 12 hours). The sheet shows the
+   overtime rate (salary ÷ 12) and an example 14-hour day. A new salary can start today or on a future date; days already
+   paid never change.
+2. When an employee **checks out**, that day's pay is calculated right away: day salary + overtime minutes × hourly rate.
+   The dashboard pops up *"Siti checked out · RM 165.63 due [Pay]"* and the Pay tab badge counts what's unpaid.
+3. **Pay tab → tap the day** to see the breakdown, then choose:
+   - **Cash**: the camera opens. Photograph the signed payslip and confirm. A cash payment can't be saved without the photo.
+   - **QR / DuitNow**: confirm; a screenshot of the transfer is optional.
+   - **Pay later**: stays pending, optionally with a note ("Friday"). The *Outstanding* total and the *Owed to* chips
+     track everything still unpaid, per person.
+4. Bonus, advance or deduction: **Adjust amount** with a reason before paying.
+5. Mistake? The owner can **Undo payment** (the photo stays on record). If attendance is corrected after a day was paid,
+   the payout is flagged **Check** instead of silently changing.
+6. Month end: **Export this month (CSV)** at the bottom of Pay.
+
+## Leaderboard
+
+More → Leaderboard: last 7 days / this month / last month. Points: +10 on time, +5 per day worked, −5 late, −10 missed
+check-out. Tap **Share** to send a ready-made image (names and points only, no pay) to WhatsApp or Instagram, or copy it
+as text.
 
 ## Corrections
 

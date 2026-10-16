@@ -33,6 +33,12 @@ Honest status as of this delivery. "Verified" means an automated test or a real 
   not point-in-time recovery.
 - **SMTP retries after a crash mid-send** can, rarely, duplicate an email (Resend uses an idempotency key; SMTP cannot).
 - **Payroll exports are provisional** by design.
+- **Payroll is per day**: one payout per completed session, daily salary for 12 h + overtime at salary ÷ 12. No
+  monthly salaries, public-holiday multipliers, EPF/SOCSO/EIS deductions or tax. Use Adjust for one-offs. It records
+  payments; it does not move money (no DuitNow/bank integration).
+- **Payslip photos are stored in PostgreSQL** (≤ 4 MB each, compressed to ~200–400 KB in the browser). A busy restaurant
+  adds roughly 3–6 GB a year at 30 payouts/day, so watch disk on a 10–30 GB VPS; move to object storage if needed.
+- **Leaderboard share image** uses initials, not face photos (privacy), and lists at most 7 people.
 - **Native date pickers** in the dashboard show the browser's date format; all other dates use the en-MY format.
 - **APK size** is ~130 MB because OpenCV native libraries for three CPU types and the 39 MB recognition model are bundled.
   Building an arm64-only APK (most current tablets) would roughly halve it.

@@ -1,7 +1,8 @@
 export type Permission =
   | 'attendance.read' | 'attendance.manual' | 'attendance.review' | 'corrections.request' | 'corrections.approve'
   | 'employees.read' | 'employees.write' | 'biometrics.manage' | 'shifts.write' | 'devices.manage'
-  | 'notifications.manage' | 'settings.manage' | 'team.manage' | 'audit.read' | 'reports.export';
+  | 'notifications.manage' | 'settings.manage' | 'team.manage' | 'audit.read' | 'reports.export'
+  | 'payroll.view' | 'payroll.pay' | 'payroll.rates';
 
 export type Role = 'owner' | 'manager' | 'attendance_admin';
 
@@ -341,4 +342,105 @@ export interface Analytics {
   }[];
   absences: { employee_id: string; date: string; shift: string }[];
   insights: { id: string; severity: 'info' | 'warning'; title: string; detail: string; employee_ids?: string[] }[];
+}
+
+/* ------------------------------------------------------------------ Payroll */
+export type PayoutStatus = 'pending' | 'paid' | 'void';
+export type PayoutMethod = 'cash' | 'qr';
+
+export interface Payout {
+  id: string;
+  employee_id: string;
+  full_name: string;
+  preferred_name: string | null;
+  staff_id: string;
+  has_photo: boolean;
+  session_id: string;
+  work_date: string;
+  check_in_at: string;
+  check_out_at: string;
+  worked_minutes: number;
+  standard_minutes: number;
+  ot_minutes: number;
+  daily_rate_cents: number;
+  base_cents: number;
+  ot_cents: number;
+  adjustment_cents: number;
+  adjustment_reason: string | null;
+  total_cents: number;
+  rate_missing: boolean;
+  needs_review: boolean;
+  review_reason: string | null;
+  status: PayoutStatus;
+  method: PayoutMethod | null;
+  pay_note: string | null;
+  paid_at: string | null;
+  paid_by: string | null;
+  has_proof: boolean;
+  created_at: string;
+}
+
+export interface PayoutsResponse {
+  currency: string;
+  standard_hours: number;
+  summary: {
+    pending_count: number;
+    pending_cents: number;
+    rate_missing_count: number;
+    needs_review_count: number;
+    paid_month_cents: number;
+    paid_month_cash_cents: number;
+    paid_month_qr_cents: number;
+  };
+  pending_by_employee: { employee_id: string; full_name: string; preferred_name: string | null; count: number; cents: number; oldest: string }[];
+  payouts: Payout[];
+}
+
+export interface RateRow {
+  employee_id: string;
+  full_name: string;
+  preferred_name: string | null;
+  staff_id: string;
+  job_title: string | null;
+  has_photo: boolean;
+  daily_rate_cents: number | null;
+  effective_from: string | null;
+  upcoming_rate_cents: number | null;
+  upcoming_from: string | null;
+}
+
+export interface RatesResponse {
+  standard_hours: number;
+  short_day_policy: 'full' | 'prorate';
+  currency: string;
+  today: string;
+  employees: RateRow[];
+}
+
+export interface LeaderRow {
+  rank: number;
+  employee_id: string;
+  full_name: string;
+  preferred_name: string | null;
+  staff_id: string;
+  has_photo: boolean;
+  points: number;
+  days_worked: number;
+  on_time: number;
+  late: number;
+  missing_checkouts: number;
+  worked_minutes: number;
+  punctuality_rate: number | null;
+  streak: number;
+}
+
+export interface LeaderboardResponse {
+  period: 'week' | 'month' | 'last_month' | 'custom';
+  from: string;
+  to: string;
+  timezone: string;
+  restaurant: string;
+  points: { onTime: number; dayWorked: number; late: number; missingCheckout: number };
+  rows: LeaderRow[];
+  awards: { id: 'punctual' | 'hours' | 'streak'; title: string; employee_id: string; detail: string }[];
 }

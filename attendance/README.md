@@ -5,7 +5,9 @@ Face-recognition attendance for restaurants:
 - **Android kiosk app**: the employee taps **CHECK IN** or **CHECK OUT**, and only then does the camera open. The face is
   recognised on the device, the server validates the action, and a confirmation appears.
 - **Owner dashboard (PWA)**: install it on iPhone, Android or desktop. Live attendance, staff, shifts, alerts,
-  corrections, insights, reports, email notifications.
+  corrections, insights, reports, email notifications. **Salaries & payouts**: each check-out adds the day's pay
+  (12-hour salary + overtime); the manager pays by cash (payslip photo required), QR, or leaves it pending. A
+  **shareable leaderboard** image is built in. iOS 26 "Liquid Glass" design.
 - **Cloud backend**: Node + PostgreSQL. A single source of truth with row-level tenant isolation, immutable attendance
   events, an audit trail, and realtime updates.
 
@@ -23,7 +25,7 @@ attendance/
 ```bash
 bash attendance/scripts/dev-db.sh                 # PostgreSQL 16 must be running locally
 bash attendance/scripts/fetch-models.sh           # face models (SHA-256 verified)
-cd attendance/server && npm ci && npm test        # 47 tests against real PostgreSQL
+cd attendance/server && npm ci && npm test        # 64 tests against real PostgreSQL
 DATABASE_URL=postgres://att_app:app_pw@localhost:5432/attendance_dev \
   TEMPLATE_KEYS="1:$(openssl rand -base64 32)" EMAIL_TRANSPORT=log npm run dev
 cd ../web && npm ci && npm run dev                # dashboard at http://localhost:5173

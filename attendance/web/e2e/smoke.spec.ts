@@ -102,7 +102,11 @@ test('owner flow: signup → staff/shift → kiosk pairing → manual check-in �
   await pairing.getByRole('button', { name: 'Done' }).click();
 
   // 6. Live feed updates via SSE without reload ---------------------------
-  if (mobile) await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Live' }).click();
+  // On phones the owner's tab bar shows Pay instead of Live, so the feed is reached via More.
+  if (mobile) {
+    await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'More' }).click();
+    await page.getByRole('link', { name: /Live feed/ }).click();
+  }
   else await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Live feed' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Live feed' })).toBeVisible();
   await expect(page.locator('.feed-item', { hasText: 'Siti Aminah' })).toBeVisible();

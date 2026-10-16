@@ -6,9 +6,9 @@ Actual results only. Where something could not be executed, it says so and why.
 
 | Area | Where run | Result |
 |---|---|---|
-| Backend unit + integration tests (real PostgreSQL 16, non-owner role so RLS applies) | Dev environment, and GitHub Actions (`attendance-server`) | **50 / 50 pass** locally (3 consecutive full runs on the final code); CI run #2 **success** |
+| Backend unit + integration tests (real PostgreSQL 16, non-owner role so RLS applies) | Dev environment, and GitHub Actions (`attendance-server`) | **64 / 64 pass** locally (includes 14 payroll/leaderboard tests); earlier 50-test build: CI run #2 **success** |
 | Owner PWA: typecheck, unit tests, build | Dev environment + GitHub Actions (`attendance-web`) | tsc 0 errors · **23 / 23** vitest pass · build OK · CI run #2 **success** |
-| Owner PWA end-to-end (Playwright, Chromium, real backend serving the built PWA with strict CSP) | Dev environment | **4 / 4** pass (390×844 & 1440×900, light & dark); 50 screenshots in `docs/screenshots/` |
+| Owner PWA end-to-end (Playwright, Chromium, real backend serving the built PWA with strict CSP) | Dev environment | **8 / 8** pass: smoke + payroll specs × (390×844 & 1440×900, light & dark); screenshots in `docs/screenshots/` |
 | Android kiosk `:core` logic (JUnit) | Dev environment + GitHub Actions | **144 / 144** pass (14 classes) |
 | Android `:app` compile, unit tests, lint, debug + release APK | GitHub Actions (`attendance-android`) | **BUILD SUCCESSFUL in 2m 55s**; `app-debug.apk` (debug-signed, installable) and `app-release-unsigned.apk` produced |
 | Face pipeline (YuNet + SFace, same OpenCV APIs as the kiosk) on public photos | Dev environment | 0 wrong-person acceptances; see [FACE_EVAL_RESULTS.md](FACE_EVAL_RESULTS.md) |
@@ -62,6 +62,15 @@ injection; email backoff cap.
 - Regression: overnight shift started yesterday appears on today's roster as late; feed cursor does not skip events with
   identical timestamps; static serving returns 404 for missing hashed assets and serves new build files without restart.
 
+Payroll & leaderboard (`server/test/payroll.test.ts`, 5 unit + 9 integration): pay maths (12 h salary, OT = salary ÷ 12,
+rounding, short-day full/prorate); a payout is created **in the check-out transaction** with the right total; salary
+change refreshes pending payouts only; cash without photo → `400 photo_required`, non-image bytes rejected, cash with
+JPEG and QR without photo succeed; paying twice → `409`; paid amounts frozen by the DB trigger, a later correction sets
+`needs_review` instead; owner-only undo; manager cannot set salaries (`403`); tenant isolation on payouts and proofs;
+leaderboard points, ties and awards; payouts CSV.
+
+Bugs found by these tests: `operator is not unique: unknown + unknown` in the payout upsert (fixed with explicit casts).
+
 Bugs found and fixed by these tests during development: a correction response sent before its transaction committed;
 a SQL parameter type error on employee status changes; the worker re-flagging sessions on every tick; overnight shifts
 missing from "Today"; feed paging skipping same-timestamp events; stale-asset fallback after deploys.
@@ -69,13 +78,20 @@ missing from "Today"; feed paging skipping same-timestamp events; stale-asset fa
 ## Owner PWA (web/)
 
 `npm run typecheck` (0 errors) · `npx vitest run` (23 tests: time-zone formatting, status mapping — `pending_review` never
-shown as Verified, API client CSRF/error/401 handling) · `npm run build` (precache 38 entries; service worker has
+shown as Verified, API client CSRF/error/401 handling) · `npm run build` (precache 41 entries; service worker has
 `denylist: [/^\/api\//]` and no API runtime caching).
 
 Playwright `e2e/smoke.spec.ts` against the real backend serving `web/dist`: sign up → shift → employee → manual check-in
 → pairing code (format, countdown) → live feed updates **without reload** when an event is created from another API
 session → event detail → Today/Timesheets/Alerts/kiosk settings render → Insights CSV download contains PROVISIONAL.
 Fails on any console error/CSP violation (only the expected pre-login 401 is allowed) and on horizontal overflow at 390 px.
+
+Playwright `e2e/payroll.spec.ts`: owner sets a daily salary in the Salaries sheet (OT preview checked) → staff check in/out
+→ payouts appear with the computed totals → **cash** payment blocked until a payslip photo is attached, then saved and the
+photo is shown on the paid payout → **QR** payment without photo → third day kept **pending** with a note → a check-out
+made from a second browser context pops the *"checked out · RM … due"* toast and updates the Pay badge without reload →
+leaderboard ranks/podium → share sheet produces a 1080×1350 PNG (`docs/screenshots/leaderboard-share-image.png`).
+The share-card layout was also rendered with 4 and 10 staff to check it does not overlap at either size.
 
 Not exercised end-to-end (need the kiosk): offline-synced / awaiting-review / rejected kiosk events and enrollment
 confirm/reject in the browser (implemented and unit-tested; backend paths covered by integration tests).
